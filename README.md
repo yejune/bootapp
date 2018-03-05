@@ -10,7 +10,7 @@ mv bootapp.phar /usr/local/bin/bootapp
 
 -   self-update
 
--   up [-a, --attach|-p, --pull]
+-   up [-n, --no-upgrade|-a, --attach|-p, --pull]
 
 -   halt
 
