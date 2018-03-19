@@ -44,7 +44,7 @@ class Command extends \Peanut\Console\Command
 
         if ($this->verbose) {
             $print = true;
-            $this->message('IN >> '.$command);
+            $this->message(\Peanut\Console\Color::gettext('IN >> ', 'white').\Peanut\Console\Color::gettext($command, 'red'));
         } else {
             if (true === isset($option['print'])) {
                 $print = $option['print'];
@@ -58,7 +58,7 @@ class Command extends \Peanut\Console\Command
         $process->setTty($tty);
         $process->setTimeout($timeout);
         $process->run(function ($type, $buf) use ($print, $command) {
-            if (true == $print) {
+            if (true === $print) {
                 $buffers = explode(PHP_EOL, trim($buf, PHP_EOL));
 
                 foreach ($buffers as $buffer) {
@@ -69,9 +69,11 @@ class Command extends \Peanut\Console\Command
                             print_r('Check your docker-machine.');
                         }
 
-                        echo \Peanut\Console\Color::text('OUT > ', 'black').$buffer.PHP_EOL;
+                        echo \Peanut\Console\Color::gettext('OUT > ', 'black').\Peanut\Console\Color::gettext($buffer, 'dark_gray').PHP_EOL;
                     }
                 }
+            } elseif ('.' == $print) {
+                echo $print;
             }
         });
 
@@ -117,10 +119,10 @@ class Command extends \Peanut\Console\Command
                         $tmp = '';
 
                         if ($name) {
-                            $tmp .= \Peanut\Console\Color::text(str_pad($name, 16, ' ', STR_PAD_RIGHT).' | ', $color);
+                            $tmp .= \Peanut\Console\Color::gettext(str_pad($name, 16, ' ', STR_PAD_RIGHT).' | ', $color);
                         }
 
-                        $tmp .= \Peanut\Console\Color::text($line, 'light_gray');
+                        $tmp .= \Peanut\Console\Color::gettext($line, 'light_gray');
 
                         $this->message($tmp);
                     }
@@ -144,6 +146,8 @@ class Command extends \Peanut\Console\Command
 
     /**
      * @param $m
+     * @param mixed $message
+     * @param mixed $name
      */
     public function log($message = '', $name = '')
     {
@@ -157,7 +161,7 @@ class Command extends \Peanut\Console\Command
                 echo ' = ';
             }
 
-            echo trim($message).PHP_EOL;
+            echo($message).PHP_EOL;
         }
     }
 
@@ -191,7 +195,7 @@ class Command extends \Peanut\Console\Command
 
             foreach ($row as $cell) {
                 $i++;
-                $table .= str_pad($cell, $columns[$i]).'   ';
+                $table .= str_pad($cell ?: ' ', $columns[$i], ' ').'   ';
             }
 
             $ret[] = $table;
@@ -207,9 +211,9 @@ class Command extends \Peanut\Console\Command
     {
         if (true === isset($this->config['stage_name'])) {
             return $this->config['stage_name'];
-        } else {
-            return 'local';
         }
+
+        return 'local';
     }
 
     /**
@@ -219,9 +223,9 @@ class Command extends \Peanut\Console\Command
     {
         if (true === isset($this->config['machine_name'])) {
             return $this->config['machine_name'];
-        } else {
-            return 'bootapp-docker-machine';
         }
+
+        return 'bootapp-docker-machine';
     }
 
     /**
@@ -231,13 +235,14 @@ class Command extends \Peanut\Console\Command
     {
         if (true === isset($this->config['project_name'])) {
             return $this->config['project_name'];
-        } else {
-            return '';
         }
+
+        return '';
     }
 
     /**
      * @return string
+     * @param mixed $name
      */
     public function getContainerName($name)
     {

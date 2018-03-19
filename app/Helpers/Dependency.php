@@ -19,7 +19,15 @@ class Dependency
     protected $position = 0;
 
     /**
+     * @param $array
+     */
+    public function __construct($array)
+    {
+    }
+
+    /**
      * @return mixed
+     * @param null|mixed $array
      */
     public static function sort($array = null)
     {
@@ -30,13 +38,6 @@ class Dependency
         }
 
         return $instance->doSort()->toArray();
-    }
-
-    /**
-     * @param $array
-     */
-    public function __construct($array)
-    {
     }
 
     /**
@@ -88,14 +89,6 @@ class Dependency
     }
 
     /**
-     * @param $element
-     */
-    protected function addToList($element)
-    {
-        $this->sorted[$this->position++] = $element->id;
-    }
-
-    /**
      * @return mixed
      */
     public function doSort()
@@ -112,5 +105,13 @@ class Dependency
         }
 
         return $this->sorted;
+    }
+
+    /**
+     * @param $element
+     */
+    protected function addToList($element)
+    {
+        $this->sorted[$this->position++] = $element->id;
     }
 }

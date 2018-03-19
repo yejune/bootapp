@@ -32,6 +32,7 @@ class Log extends Command
 
     /**
      * @param $name
+     * @param mixed $isFollow
      */
     public function dockerLog($name, $isFollow = false)
     {
@@ -49,7 +50,7 @@ class Log extends Command
         $command[] = $containerName;
 
         echo 'command | ';
-        echo \Peanut\Console\Color::text(implode(' ', $command), 'white').PHP_EOL.PHP_EOL;
+        echo \Peanut\Console\Color::gettext(implode(' ', $command), 'white').PHP_EOL.PHP_EOL;
 
         //echo shell_exec(implode(' ', $command));
         $this->process($command, ['print' => true]);

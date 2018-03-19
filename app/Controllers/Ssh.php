@@ -52,7 +52,7 @@ class Ssh extends Command
         ];
 
         echo 'command | ';
-        echo \Peanut\Console\Color::text(implode(' ', $command), 'white').PHP_EOL.PHP_EOL;
+        echo \Peanut\Console\Color::gettext(implode(' ', $command), 'white').PHP_EOL.PHP_EOL;
         $this->process($command, ['print' => false, 'tty' => true]);
     }
 }

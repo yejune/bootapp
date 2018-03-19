@@ -61,7 +61,8 @@ trait Run
     }
 
     /**
-     * @param $stageName
+     * @param mixed $mode
+     * @param mixed $isPull
      */
     public function Containers($mode, $isPull)
     {
@@ -84,9 +85,8 @@ trait Run
 
                 if (0 == $existsCount) {
                     break;
-                } else {
-                    echo 'Name invalid. ';
                 }
+                echo 'Name invalid. ';
             }
 
             $this->config = ['project_name' => $inputProjectName] + $this->config;
@@ -98,9 +98,9 @@ trait Run
         $machineName = $this->getMachineName();
         $compose     = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
 
-        echo \Peanut\Console\Color::text('machine | ', 'white').$machineName.PHP_EOL;
-        echo \Peanut\Console\Color::text('project | ', 'white').$projectName.PHP_EOL;
-        echo \Peanut\Console\Color::text('stage   | ', 'white').$stageName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('machine | ', 'white').$machineName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('project | ', 'white').$projectName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('stage   | ', 'white').$stageName.PHP_EOL;
 
         $checkBuild = false;
         $checkPull  = false;
@@ -130,7 +130,7 @@ trait Run
         // pull
         {
             if ($checkPull && $isPull) {
-                echo \Peanut\Console\Color::text('pull    | ', 'white');
+                echo \Peanut\Console\Color::gettext('pull    | ', 'white');
 
                 foreach ($compose['services'] as $serviceName => $service) {
                     if (true === isset($service['image'])) {
@@ -152,7 +152,7 @@ trait Run
         // build
         {
             if ($checkBuild) {
-                echo \Peanut\Console\Color::text('build   | ', 'white');
+                echo \Peanut\Console\Color::gettext('build   | ', 'white');
 
                 foreach ($compose['services'] as $serviceName => $service) {
                     if (true === isset($service['build'])) {
@@ -160,6 +160,7 @@ trait Run
                         $buildOpts[] = 'docker';
                         $buildOpts[] = 'build';
                         $buildOpts[] = '--no-cache';
+                        $buildOpts[] = '--pull';
                         $buildOpts[] = '--tag='.$service['name'];
 
                         if (true === is_array($service['build'])) {
@@ -180,7 +181,7 @@ trait Run
 
                         //$this->message('build '.$service['name']);
                         echo $service['org_name'].' ';
-                        $this->process($buildOpts, ['print' => false]);
+                        $this->process($buildOpts, ['print' => '.']);
                     }
                 }
 
@@ -190,7 +191,7 @@ trait Run
 
         // remove
         {
-            echo \Peanut\Console\Color::text('remove  | ', 'white');
+            echo \Peanut\Console\Color::gettext('remove  | ', 'white');
 
             foreach ($compose['services'] as $serviceName => $service) {
                 echo $service['org_name'].' ';
@@ -252,7 +253,7 @@ trait Run
                     foreach ($dockerNetworks as $dockerNetworkName => $dockerNetworkSubnet) {
                         foreach ($network['ipam']['config'] as $configSubnet) {
                             if (true === isset($configSubnet['subnet']) && $configSubnet['subnet'] == $dockerNetworkSubnet) {
-                                $this->message(\Peanut\Console\Color::text($networkName.' conflicts with network '.$dockerNetworkName.', subnet '.$dockerNetworkSubnet, 'red'));
+                                $this->message(\Peanut\Console\Color::gettext($networkName.' conflicts with network '.$dockerNetworkName.', subnet '.$dockerNetworkSubnet, 'red'));
                                 echo 'delete? [y/N]: ';
                                 $handle = fopen('php://stdin', 'r');
                                 $line   = fgets($handle);
@@ -260,15 +261,14 @@ trait Run
 
                                 if (false === in_array(trim($line), ['y', 'Y'])) {
                                     throw new \Peanut\Console\Exception($networkName.' conflicts with network '.$dockerNetworkName.', subnet '.$dockerNetworkSubnet);
-                                } else {
-                                    $networkRmCommand = [
+                                }
+                                $networkRmCommand = [
                                                         'docker',
                                         'network',
                                         'rm',
                                         $dockerNetworkName,
                                     ];
-                                    $this->process($networkRmCommand, ['print' => false]);
-                                }
+                                $this->process($networkRmCommand, ['print' => false]);
                             }
                         }
                     }
@@ -311,7 +311,7 @@ trait Run
                                 'network',
                                 'inspect',
                                 "--format='{{range .IPAM.Config}}{{.Subnet}}{{end}}'",
-                                'bridge'
+                                'bridge',
                             ], ['print' => false])->toString();
 
                             $subnetIps = [];
@@ -358,7 +358,7 @@ trait Run
                         throw new \Peanut\Console\Exception('network '.$networkName.' not found');
                     }
 
-                    echo \Peanut\Console\Color::text('network | ', 'white').'recreate '.$networkName.', subnet '.implode(' ', $subnet).PHP_EOL;
+                    echo \Peanut\Console\Color::gettext('network | ', 'white').'recreate '.$networkName.', subnet '.implode(' ', $subnet).PHP_EOL;
                 }
             }
         }
@@ -366,9 +366,9 @@ trait Run
         // create or run
         {
             if ('attach' == $mode) {
-                echo \Peanut\Console\Color::text('start   | ', 'white');
+                echo \Peanut\Console\Color::gettext('start   | ', 'white');
             } else {
-                echo \Peanut\Console\Color::text('run     | ', 'white');
+                echo \Peanut\Console\Color::gettext('run     | ', 'white');
             }
 
             $runCommands = [];
@@ -485,9 +485,8 @@ trait Run
                     foreach ($service['extra_hosts'] as $value) {
                         $command[] = '--add-host="'.$value.'"';
                     }
-                } else {
-                    //$command[] = '-P';
                 }
+                //$command[] = '-P';
 
                 if (true === isset($service['net'])) {
                     $command[] = '--net='.$service['net'];
@@ -501,9 +500,8 @@ trait Run
                     foreach ($service['ports'] as $value) {
                         $command[] = '--publish='.$value;
                     }
-                } else {
-                    //$command[] = '-P';
                 }
+                //$command[] = '-P';
 
                 if (true === isset($service['restart'])) {
                     $command[] = '--restart='.$service['restart'];
@@ -535,7 +533,7 @@ trait Run
 
                 if (true === isset($service['environment']['DOMAIN'])) {
                     //if (false === strpos($service['environment']['DOMAIN'], ' ')) {
-                        $command[] = '--label com.docker.bootapp.domain="'.$service['environment']['DOMAIN'].'"';
+                    $command[] = '--label com.docker.bootapp.domain="'.$service['environment']['DOMAIN'].'"';
                     //} else {
                     //    throw new \Peanut\Console\Exception('domain name not valid');
                     //}
@@ -577,7 +575,6 @@ trait Run
                         $service['name'],
                     ];
                     $this->childProcess($service['name'], implode(' ', $command));
-                } else {
                 }
 
                 echo $service['org_name'].' ';

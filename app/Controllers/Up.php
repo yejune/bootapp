@@ -59,8 +59,8 @@ class Up extends Command
                 true
             );
             if (null !== $update) {
-                echo \Peanut\Console\Color::text('New version is available.', 'white', 'red').PHP_EOL;
-                echo \Peanut\Console\Color::text('Please execute `bootapp self-update` Or use --no-upgrade(-n) option', 'white', 'red').PHP_EOL;
+                echo \Peanut\Console\Color::gettext('New version is available.', 'white', 'red').PHP_EOL;
+                echo \Peanut\Console\Color::gettext('Please execute `bootapp self-update` Or use --no-upgrade(-n) option', 'white', 'red').PHP_EOL;
                 exit;
             }
         }
@@ -71,7 +71,7 @@ class Up extends Command
 
         if ('attach' == $mode && false === function_exists('pcntl_fork')) {
             $mode = 'detach';
-            echo \Peanut\Console\Color::text('attach mode is not support, start detach mode', 'red', '').PHP_EOL.PHP_EOL;
+            echo \Peanut\Console\Color::gettext('attach mode is not support, start detach mode', 'red', '').PHP_EOL.PHP_EOL;
         }
 
         if ('attach' == $mode) {

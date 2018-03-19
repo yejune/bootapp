@@ -63,8 +63,8 @@ trait Ls
             }
         }
 
-        $docker = [];
-
+        $docker  = [];
+        $docker2 = [];
         if ($isAll) {
             foreach ($psList as $str) {
                 parse_str($str, $a);
@@ -98,25 +98,46 @@ trait Ls
                 $tmp  = array_merge($a, $ilist[$a['id']]);
                 $name = trim($tmp['name'], '/');
 
-                $docker[$tmp['id']] = [
-                    'service' => $tmp['service'],
-                    //'name'    => $name,
-                    'image'   => $tmp['image'],
-                    'status'  => $tmp['status'],
-                    'ip'      => $tmp['ip'],
-                    'domain'  => $tmp['domain'],
-                    'ports'   => $tmp['ports'],
-                ];
+                $ports    = explode(',', $tmp['ports']);
+                $domain   = explode(' ', $tmp['domain']);
+                $max      = max(count($ports), count($domain));
+                if ($max == 1) {
+                    $tmp = [
+                        'service' => $tmp['service'],
+                        //'name'    => $name,
+                        'image'   => $tmp['image'],
+                        'status'  => $tmp['status'],
+                        'ip'      => $tmp['ip'],
+                        'ports'   => $tmp['ports'],
+                        'domain'  => $tmp['domain'],
+                    ];
+                    $docker[] = $tmp;
+                } else {
+                    for ($i=0; $i < $max; $i++) {
+                        $docker[] = [
+                            'service' => $i == 0 ? $tmp['service'] : '',
+                            //'name'    => $name,
+                            'image'   => $i == 0 ? $tmp['image'] : '',
+                            'status'  => $i == 0 ? $tmp['status'] : '',
+                            'ip'      => $i == 0 ? $tmp['ip'] : '',
+                            'ports'   => trim($ports[$i] ?? ''),
+                            'domain'  => trim($domain[$i] ?? ''),
+                        ];
+                    }
+                }
             }
 
-            usort($docker, function ($a, $b) {
-                return strcmp($a['ip'], $b['ip']);
-            });
+            // usort($docker, function ($a, $b) {
+            //     return strcmp($a['ip'], $b['ip']);
+            // });
 
-            array_unshift($docker, ['SERVICE', /*'NAME',*/'IMAGE', 'STATUS', 'IP', 'DOMAIN', 'PORTS']);
+            array_unshift($docker, ['SERVICE', /*'NAME',*/'IMAGE', 'STATUS', 'IP', 'PORTS', 'DOMAIN']);
             $table = $this->table($docker);
         }
 
         $this->message($table);
+    }
+    public function tmp($arr)
+    {
     }
 }

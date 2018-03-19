@@ -97,9 +97,9 @@ trait Create
         $machineName = $this->getMachineName();
         $compose     = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
 
-        echo \Peanut\Console\Color::text('machine | ', 'white').$machineName.PHP_EOL;
-        echo \Peanut\Console\Color::text('project | ', 'white').$projectName.PHP_EOL;
-        echo \Peanut\Console\Color::text('stage   | ', 'white').$stageName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('machine | ', 'white').$machineName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('project | ', 'white').$projectName.PHP_EOL;
+        echo \Peanut\Console\Color::gettext('stage   | ', 'white').$stageName.PHP_EOL;
 
         $isBuild = false;
 
@@ -126,7 +126,7 @@ trait Create
 
         // remove
         {
-            echo \Peanut\Console\Color::text('remove  | ', 'white');
+            echo \Peanut\Console\Color::gettext('remove  | ', 'white');
 
             foreach ($compose['services'] as $serviceName => $service) {
                 echo $service['org_name'].' ';
@@ -188,7 +188,7 @@ trait Create
                     foreach ($dockerNetworks as $dockerNetworkName => $dockerNetworkSubnet) {
                         foreach ($network['ipam']['config'] as $configSubnet) {
                             if (true === isset($configSubnet['subnet']) && $configSubnet['subnet'] == $dockerNetworkSubnet) {
-                                $this->message(\Peanut\Console\Color::text($networkName.' conflicts with network '.$dockerNetworkName.', subnet '.$dockerNetworkSubnet, 'red'));
+                                $this->message(\Peanut\Console\Color::gettext($networkName.' conflicts with network '.$dockerNetworkName.', subnet '.$dockerNetworkSubnet, 'red'));
                                 echo 'delete? [y/N]: ';
                                 $handle = fopen('php://stdin', 'r');
                                 $line   = fgets($handle);
@@ -246,7 +246,7 @@ trait Create
                         throw new \Peanut\Console\Exception('network '.$networkName.' not found');
                     }
 
-                    echo \Peanut\Console\Color::text('network | ', 'white').'recreate '.$networkName.', subnet '.implode(' ', $subnet).PHP_EOL;
+                    echo \Peanut\Console\Color::gettext('network | ', 'white').'recreate '.$networkName.', subnet '.implode(' ', $subnet).PHP_EOL;
                 }
             }
         }
@@ -254,7 +254,7 @@ trait Create
         // build
         {
             if ($isBuild) {
-                echo \Peanut\Console\Color::text('build   | ', 'white');
+                echo \Peanut\Console\Color::gettext('build   | ', 'white');
 
                 foreach ($compose['services'] as $serviceName => $service) {
                     if (true === isset($service['build'])) {
@@ -291,7 +291,7 @@ trait Create
 
         // create or run
         {
-            echo \Peanut\Console\Color::text('create  | ', 'white');
+            echo \Peanut\Console\Color::gettext('create  | ', 'white');
 
             $runCommands = [];
 
@@ -376,7 +376,7 @@ trait Create
         // start and attach
         {
             if ('attach' == $this->mode) {
-                echo \Peanut\Console\Color::text('start   | ', 'white');
+                echo \Peanut\Console\Color::gettext('start   | ', 'white');
 
                 foreach ($compose['services'] as $serviceName => $service) {
                     echo $service['org_name'].' ';

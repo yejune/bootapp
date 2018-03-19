@@ -36,185 +36,6 @@ trait Machine
         $this->removeNetwork();
     }
 
-    private function checkMachineInfo()
-    {
-        $machineName = $this->getMachineName();
-
-        $command = [
-            'vboxmanage',
-            'showvminfo',
-            $machineName,
-            '--details',
-            '--machinereadable',
-        ];
-        $raw              = $this->process($command, ['print' => false])->toArray();
-        $uuid             = '';
-        $hostOnlyAdapters = [];
-        $sharedFolders    = [];
-        $status           = '';
-        $rawDatas         = [];
-
-        foreach ($raw as $str) {
-            list($key, $value)         = explode('=', $str, 2);
-            $rawDatas[trim($key, '"')] = trim($value, '"');
-        }
-
-        foreach ($rawDatas as $key => $value) {
-            if ('UUID' == $key) {
-                $uuid = $value;
-            }
-
-            if (1 === preg_match('#hostonlyadapter(\d+)#i', $key, $match)) {
-                $hostOnlyAdapters[$match[1]] = $value;
-            }
-
-            if (1 === preg_match('#SharedFolderNameMachineMapping(\d+)#i', $key, $match)) {
-                $sharedFolders[$value] = $rawDatas['SharedFolderPathMachineMapping'.$match[1]];
-            }
-
-            if ('VMState' == $key) {
-                $status = $value;
-            }
-        }
-
-        $this->uuid             = $uuid;
-        $this->hostOnlyAdapters = $hostOnlyAdapters;
-        $this->sharedFolders    = $sharedFolders;
-    }
-
-    private function setDocerHost()
-    {
-        $machineName = $this->getMachineName();
-
-        if (true === isset($config['docker_host']) && $config['docker_host']) {
-            putenv('DOCKER_HOST='.$config['docker_host']);
-
-            if (true === isset($config['docker_cert']) && $config['docker_cert']) {
-                putenv('DOCKER_TLS_VERIFY=1');
-                putenv('DOCKER_CERT_PATH='.$config['docker_cert']);
-            } else {
-                putenv('DOCKER_TLS_VERIFY');
-                putenv('DOCKER_CERT_PATH');
-            }
-        } else {
-            $count = 0;
-
-            while (true) {
-                $count++;
-
-                if (10 === $count) {
-                    throw new \Peanut\Console\Exception('Error checking TLS connection: Host is not running');
-                }
-
-                $command = [
-                    'docker-machine',
-                    'env',
-                    $machineName,
-                    '2>&1',
-                ];
-                $env = $this->process($command, ['print' => false]);
-
-                //Error checking and/or regenerating the certs
-                if (false !== strpos($env->toString(), 'regenerate-certs')
-                    || false !== strpos($env->toString(), 'Could not read CA certificate')) {
-                    $this->certsDockerMachine();
-                } elseif (false === strpos($env->toString(), 'Error checking TLS connection:')) {
-                    break;
-                }
-
-                sleep(1);
-            }
-
-            foreach ($env->toArray() as $export) {
-                if (1 === preg_match('/export (?P<key>.*)="(?P<value>.*)"/', $export, $match)) {
-                    putenv($match['key'].'='.$match['value']);
-                    $_ENV[$match['key']] = $match['value'];
-                }
-            }
-        }
-
-        if (!getenv('DOCKER_HOST')) {
-            throw new \Peanut\Console\Exception('docker-host not found');
-        }
-
-        $this->message(\Peanut\Console\Color::text('docker  | ', 'white').getenv('DOCKER_HOST'));
-    }
-
-    private function removeNetwork()
-    {
-        $machineName = $this->getMachineName();
-
-        foreach ($this->hostOnlyAdapters as $name) {
-            $command = [
-                'VBoxManage',
-                'list',
-                'hostonlyifs',
-                '|',
-                'grep',
-                $name,
-                '2>&1',
-            ];
-            $chk = $this->process($command, ['print' => false])->toString();
-
-            if ($chk) {
-                $command = [
-                    'VBoxManage',
-                    'hostonlyif',
-                    'remove',
-                    $name,
-                ];
-                $this->process($command, ['print' => false]);
-            }
-        }
-    }
-
-    private function xxreloadNetwork()
-    {
-        foreach ($this->hostOnlyAdapters as $name) {
-            $command = [
-                'VBoxManage',
-                'list',
-                'hostonlyifs',
-                '|',
-                'grep',
-                $name,
-                '2>&1',
-            ];
-            $chk = $this->process($command, ['print' => false])->toString();
-
-            if ($chk) {
-                $command = [
-                    'sudo',
-                    'ifconfig',
-                    $name,
-                    'down',
-                    '&&',
-                    'sudo',
-                    'ifconfig',
-                    $name,
-                    '2>&1',
-                ];
-                $this->process($command, ['print' => false]);
-            }
-        }
-    }
-
-    /**
-     * @return string
-     */
-    private function getMachineStatus()
-    {
-        $machineName = $this->getMachineName();
-        $command     = [
-            'docker-machine',
-            'status',
-            $machineName,
-            '2>&1',
-        ];
-
-        return strtolower($this->process($command, ['print' => false])->toString());
-    }
-
     /**
      * @return null
      */
@@ -253,98 +74,6 @@ trait Machine
         */
     }
 
-    private function resumeDockerMachine()
-    {
-        $machineName = $this->getMachineName();
-
-        $command = [
-            'vboxmanage',
-            'controlvm',
-            $machineName,
-            'resume',
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    private function discardDockerMachine()
-    {
-        $machineName = $this->getMachineName();
-        $a           = $this->ask('Machine Saved, discardstate? [y/N]: ');
-
-        if (false === in_array($a, ['y', 'Y'])) {
-            throw new \Peanut\Console\Exception('machine status saved. please check.');
-        }
-
-        $command = [
-            'vboxmanage',
-            'discardstate',
-            $machineName,
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    private function deleteDockerMachine()
-    {
-        $machineName = $this->getMachineName();
-        $a           = $this->ask('Machine Error, delete? [y/N]: ');
-
-        if (false === in_array($a, ['y', 'Y'])) {
-            throw new \Peanut\Console\Exception('machine status error. please check.');
-        }
-
-        $command = [
-            'docker-machine',
-            'rm',
-            '-f',
-            $machineName,
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    private function startMachine()
-    {
-        $machineName = $this->getMachineName();
-        $this->message('Starting docker-machine');
-
-        $command = [
-            'docker-machine',
-            'start',
-            $machineName,
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    private function certsDockerMachine()
-    {
-        $machineName = $this->getMachineName();
-        $command     = [
-            'docker-machine',
-            'regenerate-certs',
-            '-f',
-            $machineName,
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    private function createDockerMachine()
-    {
-        $machineName = $this->getMachineName();
-        $this->message('Creating docker-machine');
-        $command = [
-            'docker-machine',
-            'create',
-            '--driver=virtualbox',
-            '--virtualbox-memory=2048',
-            '--virtualbox-disk-size=200000',
-            '--virtualbox-cpu-count=2',
-            $machineName,
-        ];
-        $this->process($command, ['print' => true]);
-    }
-
-    /**
-     * @param $machineName
-     */
     public function startDockerMachine()
     {
         $this->checkMachineInfo();
@@ -621,7 +350,7 @@ trait Machine
                 throw new \Peanut\Console\Exception('guest ip not found');
             }
 
-            $this->message(\Peanut\Console\Color::text('route   | ', 'white').'add '.$containerSubnet.' '.$dockerMachineIp);
+            $this->message(\Peanut\Console\Color::gettext('route   | ', 'white').'add '.$containerSubnet.' '.$dockerMachineIp);
 
             $command = [
                 'sudo',
@@ -786,7 +515,7 @@ trait Machine
         $machineName = $this->getMachineName();
         $projectName = $this->getProjectName();
 
-        $compose = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
+        $compose    = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
         $domainList = [];
         if (true === isset($compose['services'])) {
             foreach ($compose['services'] as $name => $service) {
@@ -815,10 +544,10 @@ trait Machine
             foreach ($domainList as $ip => $domain) {
                 $sslname = $SSL_DIR.'/'.$domain;
 
-                $this->message(\Peanut\Console\Color::text('cert    | ', 'white').'domain '.$domain);
-                //$this->message(\Peanut\Console\Color::text('        | ', 'white').'key     ./var/certs/'.$domain.'.key');
+                $this->message(\Peanut\Console\Color::gettext('cert    | ', 'white').'domain '.$domain);
+                //$this->message(\Peanut\Console\Color::gettext('        | ', 'white').'key     ./var/certs/'.$domain.'.key');
 
-                $certfile = $SSL_DIR.'/'.$domain.'.crt';
+                $certfile  = $SSL_DIR.'/'.$domain.'.crt';
                 $certfile2 = $SSL_DIR.'/'.$domain.'.key';
                 if (file_exists($certfile)) {
                     @unlink($certfile);
@@ -833,20 +562,20 @@ trait Machine
                         'genrsa',
                         '-out',
                         $sslname.'.key',
-                        '4096',
+                        '1024',
                     ];
                     $this->process($command, ['print' => false]);
 
                     $command = [
                         'rm -rf',
-                        '/tmp/openssl.cnf'
+                        '/tmp/openssl.cnf',
                     ];
                     $this->process($command, ['print' => false]);
 
                     $command = [
                         'cp',
                         '/System/Library/OpenSSL/openssl.cnf',
-                        '/tmp/openssl.cnf'
+                        '/tmp/openssl.cnf',
                     ];
                     $this->process($command, ['print' => false]);
 
@@ -854,7 +583,7 @@ trait Machine
                         'echo',
                         '"[SAN]\nsubjectAltName=DNS:'.$domain.'"',
                         '>>',
-                        '/tmp/openssl.cnf'
+                        '/tmp/openssl.cnf',
                     ];
                     $this->process($command, ['print' => false]);
 
@@ -879,8 +608,8 @@ trait Machine
                     ];
 
                     $this->process($command, ['print' => false]);
-                } else {
                 }
+
                 if (true === file_exists($certfile)) {
                     if ($hash = $this->getCertHashByDomain($domain)) {
                         $this->process('sudo security delete-certificate -Z '.$hash.' /Library/Keychains/System.keychain', ['print' => false]);
@@ -896,11 +625,279 @@ trait Machine
 
                     $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
 
-                    $this->message(\Peanut\Console\Color::text('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
-                } else {
-                    //error
+                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
+                }
+                //error
+            }
+        }
+    }
+
+    private function checkMachineInfo()
+    {
+        $machineName = $this->getMachineName();
+
+        $command = [
+            'vboxmanage',
+            'showvminfo',
+            $machineName,
+            '--details',
+            '--machinereadable',
+        ];
+        $raw              = $this->process($command, ['print' => false])->toArray();
+        $uuid             = '';
+        $hostOnlyAdapters = [];
+        $sharedFolders    = [];
+        $status           = '';
+        $rawDatas         = [];
+
+        foreach ($raw as $str) {
+            list($key, $value)         = explode('=', $str, 2);
+            $rawDatas[trim($key, '"')] = trim($value, '"');
+        }
+
+        foreach ($rawDatas as $key => $value) {
+            if ('UUID' == $key) {
+                $uuid = $value;
+            }
+
+            if (1 === preg_match('#hostonlyadapter(\d+)#i', $key, $match)) {
+                $hostOnlyAdapters[$match[1]] = $value;
+            }
+
+            if (1 === preg_match('#SharedFolderNameMachineMapping(\d+)#i', $key, $match)) {
+                $sharedFolders[$value] = $rawDatas['SharedFolderPathMachineMapping'.$match[1]];
+            }
+
+            if ('VMState' == $key) {
+                $status = $value;
+            }
+        }
+
+        $this->uuid             = $uuid;
+        $this->hostOnlyAdapters = $hostOnlyAdapters;
+        $this->sharedFolders    = $sharedFolders;
+    }
+
+    private function setDocerHost()
+    {
+        $machineName = $this->getMachineName();
+
+        if (true === isset($config['docker_host']) && $config['docker_host']) {
+            putenv('DOCKER_HOST='.$config['docker_host']);
+
+            if (true === isset($config['docker_cert']) && $config['docker_cert']) {
+                putenv('DOCKER_TLS_VERIFY=1');
+                putenv('DOCKER_CERT_PATH='.$config['docker_cert']);
+            } else {
+                putenv('DOCKER_TLS_VERIFY');
+                putenv('DOCKER_CERT_PATH');
+            }
+        } else {
+            $count = 0;
+
+            while (true) {
+                $count++;
+
+                if (10 === $count) {
+                    throw new \Peanut\Console\Exception('Error checking TLS connection: Host is not running');
+                }
+
+                $command = [
+                    'docker-machine',
+                    'env',
+                    $machineName,
+                    '2>&1',
+                ];
+                $env = $this->process($command, ['print' => false]);
+
+                //Error checking and/or regenerating the certs
+                if (false !== strpos($env->toString(), 'regenerate-certs')
+                    || false !== strpos($env->toString(), 'Could not read CA certificate')) {
+                    $this->certsDockerMachine();
+                } elseif (false === strpos($env->toString(), 'Error checking TLS connection:')) {
+                    break;
+                }
+
+                sleep(1);
+            }
+
+            foreach ($env->toArray() as $export) {
+                if (1 === preg_match('/export (?P<key>.*)="(?P<value>.*)"/', $export, $match)) {
+                    putenv($match['key'].'='.$match['value']);
+                    $_ENV[$match['key']]    = $match['value'];
+                    $_SERVER[$match['key']] = $match['value'];
                 }
             }
         }
+
+        if (!getenv('DOCKER_HOST')) {
+            throw new \Peanut\Console\Exception('docker-host not found');
+        }
+
+        $this->message(\Peanut\Console\Color::gettext('docker  | ', 'white').getenv('DOCKER_HOST'));
+    }
+
+    private function removeNetwork()
+    {
+        $machineName = $this->getMachineName();
+
+        foreach ($this->hostOnlyAdapters as $name) {
+            $command = [
+                'VBoxManage',
+                'list',
+                'hostonlyifs',
+                '|',
+                'grep',
+                $name,
+                '2>&1',
+            ];
+            $chk = $this->process($command, ['print' => false])->toString();
+
+            if ($chk) {
+                $command = [
+                    'VBoxManage',
+                    'hostonlyif',
+                    'remove',
+                    $name,
+                ];
+                $this->process($command, ['print' => false]);
+            }
+        }
+    }
+
+    private function xxreloadNetwork()
+    {
+        foreach ($this->hostOnlyAdapters as $name) {
+            $command = [
+                'VBoxManage',
+                'list',
+                'hostonlyifs',
+                '|',
+                'grep',
+                $name,
+                '2>&1',
+            ];
+            $chk = $this->process($command, ['print' => false])->toString();
+
+            if ($chk) {
+                $command = [
+                    'sudo',
+                    'ifconfig',
+                    $name,
+                    'down',
+                    '&&',
+                    'sudo',
+                    'ifconfig',
+                    $name,
+                    '2>&1',
+                ];
+                $this->process($command, ['print' => false]);
+            }
+        }
+    }
+
+    /**
+     * @return string
+     */
+    private function getMachineStatus()
+    {
+        $machineName = $this->getMachineName();
+        $command     = [
+            'docker-machine',
+            'status',
+            $machineName,
+            '2>&1',
+        ];
+
+        return strtolower($this->process($command, ['print' => false])->toString());
+    }
+
+    private function resumeDockerMachine()
+    {
+        $machineName = $this->getMachineName();
+
+        $command = [
+            'vboxmanage',
+            'controlvm',
+            $machineName,
+            'resume',
+        ];
+        $this->process($command, ['print' => true]);
+    }
+
+    private function discardDockerMachine()
+    {
+        $machineName = $this->getMachineName();
+        $a           = $this->ask('Machine Saved, discardstate? [y/N]: ');
+
+        if (false === in_array($a, ['y', 'Y'])) {
+            throw new \Peanut\Console\Exception('machine status saved. please check.');
+        }
+
+        $command = [
+            'vboxmanage',
+            'discardstate',
+            $machineName,
+        ];
+        $this->process($command, ['print' => true]);
+    }
+
+    private function deleteDockerMachine()
+    {
+        $machineName = $this->getMachineName();
+        $a           = $this->ask('Machine Error, delete? [y/N]: ');
+
+        if (false === in_array($a, ['y', 'Y'])) {
+            throw new \Peanut\Console\Exception('machine status error. please check.');
+        }
+
+        $command = [
+            'docker-machine',
+            'rm',
+            '-f',
+            $machineName,
+        ];
+        $this->process($command, ['print' => true]);
+    }
+
+    private function startMachine()
+    {
+        $machineName = $this->getMachineName();
+        $this->message('Starting docker-machine');
+
+        $command = [
+            'docker-machine',
+            'start',
+            $machineName,
+        ];
+        $this->process($command, ['print' => true]);
+    }
+
+    private function certsDockerMachine()
+    {
+        $machineName = $this->getMachineName();
+        $command     = [
+            'docker-machine',
+            'regenerate-certs',
+            '-f',
+            $machineName,
+        ];
+        $this->process($command, ['print' => true]);
+    }
+
+    private function createDockerMachine()
+    {
+        $machineName = $this->getMachineName();
+        $this->message('Creating docker-machine');
+        $command = [
+            'docker-machine',
+            'create',
+            '--driver=virtualbox',
+            '--virtualbox-memory=2048',
+            '--virtualbox-disk-size=200000',
+            '--virtualbox-cpu-count=2',
+            $machineName,
+        ];
+        $this->process($command, ['print' => true]);
     }
 }
