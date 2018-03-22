@@ -275,6 +275,12 @@ class Command extends \Peanut\Console\Command
         $version = $app->getApplicationVersion();
         $update  = $app->getOption('no-update') ? 'no' : '';
 
+        // 인터넷에 연결되었는지 확인
+        $ip = shell_exec('dig +short myip.opendns.com @resolver1.opendns.com 2> /dev/null');
+        if (!$ip) {
+            $update = 'no';
+        }
+
         if (version_compare($version, '0.0.0') > 0 && $update != 'no') {
             $manager = new Manager($manifest = Manifest::loadFile(
                 'https://raw.githubusercontent.com/yejune/bootapp/master/manifest.json'
