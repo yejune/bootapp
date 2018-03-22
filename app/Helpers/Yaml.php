@@ -11,12 +11,21 @@ class Yaml
      */
     public static function parseFile($fileName)
     {
-        if (true === file_exists($fileName)) {
-            try {
-                return static::parse(file_get_contents($fileName));
-            } catch (\Exception $e) {
-                throw new \Peanut\Console\Exception($e);
+        $folder      = '';
+        $paths       = explode('/', trim(getcwd(), '/'));
+        $fixFileName = $fileName;
+        for ($i=0,$j=count($paths);$i < $j;$i++) {
+            $fixFileName = $folder.$fixFileName;
+
+            if (true === file_exists($fixFileName)) {
+                try {
+                    return static::parse(file_get_contents($fixFileName));
+                } catch (\Exception $e) {
+                    throw new \Peanut\Console\Exception($e);
+                }
+                break;
             }
+            $folder = '../';
         }
 
         throw new \Peanut\Console\Exception('"'.$fileName.'" file not exists.');
