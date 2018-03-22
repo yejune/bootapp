@@ -57,6 +57,7 @@ try {
     $app = new \Peanut\Console\Application('Bootapp', '0.0.0');
 
     $app->option('verbose', ['require' => false, 'alias' => 'v|vv|vvv', 'value' => false]);
+    $app->option('no-update', ['require' => false, 'alias' => 'n', 'value' => false]);
 
     $app->command(new \App\Controllers\Selfupdate());
     $app->command(new \App\Controllers\Up());
