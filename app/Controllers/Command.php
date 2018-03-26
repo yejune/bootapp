@@ -23,6 +23,9 @@ class Command extends \Peanut\Console\Command
      */
 
     public $verbose = false;
+
+    public $cwd;
+
     /**
      * @param $command
      * @param $option
@@ -310,6 +313,7 @@ class Command extends \Peanut\Console\Command
     public function setConfig()
     {
         $this->config = \App\Helpers\Yaml::parseFile($this->configFileName);
+        $this->cwd    = \App\Helpers\Yaml::$cwd;
     }
 
     /**
@@ -334,5 +338,10 @@ class Command extends \Peanut\Console\Command
             'ip',
             $this->getMachineName(),
         ], ['print' => false]); //parse_url(getenv('DOCKER_HOST'), PHP_URL_HOST);
+    }
+
+    public function getcwd()
+    {
+        return $this->cwd;
     }
 }

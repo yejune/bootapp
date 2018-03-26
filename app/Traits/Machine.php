@@ -122,7 +122,7 @@ trait Machine
     {
         $machineName = $this->getMachineName();
         // 검사할것 없이 /Volumes만 mount하면 됨, 딱한번만 하면 됨
-        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, getcwd(), 3);
+        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $this->getcwd(), 3);
         $path                       = implode(DIRECTORY_SEPARATOR, [$first, $name]);
 
         if (false === in_array($name, array_keys($this->sharedFolders))) {
@@ -182,7 +182,7 @@ trait Machine
     public function setMount()
     {
         $machineName                = $this->getMachineName();
-        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, getcwd(), 3);
+        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $this->getcwd(), 3);
         $path                       = implode(DIRECTORY_SEPARATOR, [$first, $name]);
 
         /*
@@ -515,7 +515,7 @@ trait Machine
         $machineName = $this->getMachineName();
         $projectName = $this->getProjectName();
 
-        $compose    = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
+        $compose    = \App\Helpers\Yaml::parseFile($this->getcwd().'/docker-compose.'.$stageName.'.yml');
         $domainList = [];
         if (true === isset($compose['services'])) {
             foreach ($compose['services'] as $name => $service) {
@@ -531,12 +531,12 @@ trait Machine
         }
 
         if ($domainList) {
-            $SSL_DIR = getcwd().'/var/certs';
-            if (false === is_dir(getcwd().'/var')) {
-                mkdir(getcwd().'/var');
+            $SSL_DIR = $this->getcwd().'/var/certs';
+            if (false === is_dir($this->getcwd().'/var')) {
+                mkdir($this->getcwd().'/var');
             }
-            if (false === is_dir(getcwd().'/var/certs')) {
-                mkdir(getcwd().'/var/certs');
+            if (false === is_dir($this->getcwd().'/var/certs')) {
+                mkdir($this->getcwd().'/var/certs');
             }
 
             shell_exec('mkdir -p '.$SSL_DIR);

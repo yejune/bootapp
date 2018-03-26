@@ -5,6 +5,7 @@ use Symfony\Component\Yaml\Yaml as SymfonyYaml;
 
 class Yaml
 {
+    public static $cwd;
     /**
      * @param  $fileName
      * @return mixed
@@ -19,6 +20,8 @@ class Yaml
 
             if (true === file_exists($fixFileName)) {
                 try {
+                    static::$cwd = dirname(realpath($fixFileName));
+
                     return static::parse(file_get_contents($fixFileName));
                 } catch (\Exception $e) {
                     throw new \Peanut\Console\Exception($e);

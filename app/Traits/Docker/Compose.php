@@ -74,7 +74,7 @@ trait Compose
                         $services[$serviceName]['labels']['com.docker.bootapp.domain'] = $services[$serviceName]['environment']['DOMAIN'];
 
                         //if (false === strpos($services[$serviceName]['environment']['DOMAIN'], ' ')) {
-                            $services[$serviceName]['labels']['com.docker.bootapp.domain'] = $services[$serviceName]['environment']['DOMAIN'];
+                        $services[$serviceName]['labels']['com.docker.bootapp.domain'] = $services[$serviceName]['environment']['DOMAIN'];
                         //} else {
                         //    throw new \Peanut\Console\Exception('domain name not valid');
                         //}
@@ -138,7 +138,7 @@ trait Compose
                 }
             }
 
-            \App\Helpers\Yaml::dumpFile(getcwd().'/docker-compose.'.$stageName.'.yml', $compose);
+            \App\Helpers\Yaml::dumpFile($this->getcwd().'/docker-compose.'.$stageName.'.yml', $compose);
         }
     }
 }

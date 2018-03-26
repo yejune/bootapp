@@ -43,7 +43,7 @@ trait Run
      */
     public function volumeRealPath($path)
     {
-        $cwd = getcwd();
+        $cwd = $this->getcwd();
 
         $real = preg_replace([
             '#^.(/|:)#',
@@ -96,7 +96,7 @@ trait Run
 
         $stageName   = $this->getStageName();
         $machineName = $this->getMachineName();
-        $compose     = \App\Helpers\Yaml::parseFile(getcwd().'/docker-compose.'.$stageName.'.yml');
+        $compose     = \App\Helpers\Yaml::parseFile($this->getcwd().'/docker-compose.'.$stageName.'.yml');
 
         echo \Peanut\Console\Color::gettext('machine | ', 'white').$machineName.PHP_EOL;
         echo \Peanut\Console\Color::gettext('project | ', 'white').$projectName.PHP_EOL;
@@ -552,7 +552,7 @@ trait Run
                 }
 
                 $runCommands[] = implode(' ', $command);
-                file_put_contents(getcwd().'/.bootapp.log', date('Y-m-d H:i:s').PHP_EOL.implode(' ', $command).PHP_EOL.PHP_EOL, FILE_APPEND);
+                file_put_contents($this->getcwd().'/.bootapp.log', date('Y-m-d H:i:s').PHP_EOL.implode(' ', $command).PHP_EOL.PHP_EOL, FILE_APPEND);
 
                 $this->process($command, ['print' => false]); // create
 
