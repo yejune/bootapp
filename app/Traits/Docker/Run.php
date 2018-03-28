@@ -175,6 +175,10 @@ trait Run
                             } else {
                                 throw new \Console\Exception('build context not found');
                             }
+
+                            if (true === isset($service['build']['dockerfile'])) {
+                                $buildOpts[] = '-f '.$service['build']['dockerfile'];
+                            }
                         } else {
                             $buildOpts[] = $service['build'];
                         }
