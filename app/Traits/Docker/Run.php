@@ -437,6 +437,17 @@ trait Run
                     }
                 }
 
+                if (true === isset($service['logging'])) {
+                    if (true === isset($service['logging']['driver'])) {
+                        $command[] = '--log-driver '.$service['logging']['driver'];
+                    }
+                    if (true === is_array($service['logging']['options'])) {
+                        foreach ($service['logging']['options'] as $optionKey => $optionValue) {
+                            $command[] = '--log-opt '.$optionKey.'='.$optionValue;
+                        }
+                    }
+                }
+
                 if (true === isset($service['expose'])) {
                     foreach ($service['expose'] as $key => $value) {
                         $command[] = '--expose='.$value;
