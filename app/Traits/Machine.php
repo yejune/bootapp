@@ -893,7 +893,7 @@ trait Machine
             'docker-machine',
             'create',
             '--driver=virtualbox',
-            '--virtualbox-memory=2048',
+            '--virtualbox-memory=4096',
             '--virtualbox-disk-size=200000',
             '--virtualbox-cpu-count=2',
             $machineName,
