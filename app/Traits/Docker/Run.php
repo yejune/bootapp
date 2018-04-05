@@ -140,8 +140,9 @@ trait Run
                             $service['image'],
                         ];
                         //$this->message('build '.$service['name']);
-                        echo $service['org_name'].' ';
-                        $this->process($command, ['print' => false]);
+                        echo $service['org_name'];
+                        $this->process($command, ['print' => '.']);
+                        echo ' ';
                     }
                 }
 
@@ -184,8 +185,9 @@ trait Run
                         }
 
                         //$this->message('build '.$service['name']);
-                        echo $service['org_name'].' ';
+                        echo $service['org_name'];
                         $this->process($buildOpts, ['print' => '.']);
+                        echo ' ';
                     }
                 }
 
@@ -380,6 +382,8 @@ trait Run
             foreach ($compose['services'] as $serviceName => $service) {
                 $command = [];
 
+                echo $service['org_name'];
+
                 if ('attach' == $mode) {
                     $command[] = 'docker create';
                     $command[] = '-a STDIN';
@@ -569,7 +573,7 @@ trait Run
                 $runCommands[] = implode(' ', $command);
                 file_put_contents($this->getcwd().'/.bootapp.log', date('Y-m-d H:i:s').PHP_EOL.implode(' ', $command).PHP_EOL.PHP_EOL, FILE_APPEND);
 
-                $this->process($command, ['print' => false]); // create
+                $this->process($command, ['print' => '.']); // create
 
                 if ('attach' == $mode) {
                     $command = [
@@ -592,7 +596,7 @@ trait Run
                     $this->childProcess($service['name'], implode(' ', $command));
                 }
 
-                echo $service['org_name'].' ';
+                echo ' ';
             }
 
             echo PHP_EOL;

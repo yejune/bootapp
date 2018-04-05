@@ -63,7 +63,8 @@ class Command extends \Peanut\Console\Command
         $process = new Process($command);
         $process->setTty($tty);
         $process->setTimeout($timeout);
-        $process->run(function ($type, $buf) use ($print, $command) {
+        $printCount = 0;
+        $process->run(function ($type, $buf) use ($print, $command, &$printCount) {
             if (true === $print) {
                 $buffers = explode(PHP_EOL, trim($buf, PHP_EOL));
 
@@ -79,8 +80,11 @@ class Command extends \Peanut\Console\Command
                     }
                 }
             } elseif ('.' == $print) {
-                echo $print;
+                if ($printCount > 0) {
+                    echo $print;
+                }
             }
+            $printCount ++;
         });
 
         if ($process->getExitCode() && $process->getErrorOutput()) {

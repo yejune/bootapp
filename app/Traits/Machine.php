@@ -42,6 +42,7 @@ trait Machine
     public function initMachine()
     {
         $machineStatus = $this->getMachineStatus();
+        $machineName   = $this->getMachineName();
         $this->message('docker  | machine status "'.$machineStatus.'"');
 
         if ('running' === $machineStatus) {
@@ -217,6 +218,7 @@ trait Machine
         ];
         $this->process($command, ['print' => false]);
         */
+
         $command = [
             'docker-machine',
             'ssh',
