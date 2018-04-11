@@ -23,16 +23,15 @@ trait Machine
     public function machineHalt()
     {
         $machineName = $this->getMachineName();
+        $this->message('docker  | Machine "'.$machineName.'" HALT');
 
-        $this->message('Machine "'.$machineName.'" HALT');
-        $this->message('');
         $command = [
             'docker-machine',
             'stop',
             $machineName,
             '2>&1',
         ];
-        $this->process($command, ['print' => true]);
+        $this->process($command, ['print' => false]);
         $this->removeNetwork();
     }
 
@@ -43,7 +42,50 @@ trait Machine
     {
         $machineStatus = $this->getMachineStatus();
         $machineName   = $this->getMachineName();
-        $this->message('docker  | machine status "'.$machineStatus.'"');
+        $this->message('docker  | Machine status "'.$machineStatus.'"');
+
+        if ('running' === $machineStatus) {
+        } elseif ('stopped' === $machineStatus) {
+        } elseif ('paused' === $machineStatus) {
+        } elseif ('saved' === $machineStatus) {
+        } elseif ('error' === $machineStatus) {
+            $this->deleteDockerMachine();
+            $this->createDockerMachine();
+        } else {
+            $this->createDockerMachine();
+        }
+
+        $envMemorySize = $this->getMachineEnvironmentMemorySize();
+        if (0 < $envMemorySize) {
+            if (false === is_int($envMemorySize)) {
+                throw new \Peanut\Console\Exception('Environment memory_size field must be a number in MB.');
+            }
+            $command = [
+                'VBoxManage showvminfo '.$machineName.' | grep "Memory size"',
+            ];
+            $memorySize    = trim(str_replace(['Memory size:', 'MB'], '', $this->process($command, ['print' => false])));
+
+            if ($memorySize != $envMemorySize) {
+                if ('running' === $machineStatus) {
+                    $this->machineHalt();
+                } elseif ('stopped' === $machineStatus) {
+                } elseif ('paused' === $machineStatus) {
+                    $this->machineHalt();
+                } elseif ('saved' === $machineStatus) {
+                    $this->discardDockerMachine();
+                } elseif ('error' === $machineStatus) {
+                }
+
+                $command = [
+                    'VBoxManage modifyvm "'.$machineName.'" --memory '.$envMemorySize,
+                ];
+                $this->process($command, ['print' => false]);
+
+                $this->message('docker  | Memory size changed from '.$memorySize.' to '.$envMemorySize);
+
+                $machineStatus = $this->getMachineStatus();
+            }
+        }
 
         if ('running' === $machineStatus) {
             $this->startDockerMachine();
@@ -57,12 +99,29 @@ trait Machine
             $this->removeNetwork();
             $this->startDockerMachine();
         } elseif ('error' === $machineStatus) {
-            $this->deleteDockerMachine();
-            $this->createDockerMachine();
             $this->startDockerMachine();
         } else {
-            $this->createDockerMachine();
             $this->startDockerMachine();
+        }
+
+        $envScripts    = $this->getMachineEnvironmentInitScripts();
+        if ($envScripts) {
+            $i = 0;
+            foreach ($envScripts as $script) {
+                $i++;
+                $command = [
+                    'docker-machine',
+                    'ssh',
+                    $machineName,
+                    $script,
+                ];
+                $this->process($command, ['print' => false]);
+                if ($i == 1) {
+                    $this->message('init    | '.$script);
+                } else {
+                    $this->message('        | '.$script);
+                }
+            }
         }
 
         /*
@@ -90,7 +149,7 @@ trait Machine
 
         $this->setDocerHost();
 
-        echo 'docker  | engine ready .';
+        echo 'docker  | engine ready';
         $i = 0;
 
         while (true) {
@@ -106,7 +165,7 @@ trait Machine
                 '2>&1',
             ];
 
-            $tmp = $this->process($command, ['print' => false])->toString();
+            $tmp = $this->process($command, ['print' => '.'])->toString();
             echo '.';
 
             if (1 === preg_match('#^Containers#', $tmp)) {
@@ -865,14 +924,15 @@ trait Machine
     private function startMachine()
     {
         $machineName = $this->getMachineName();
-        $this->message('Starting docker-machine');
+        echo 'docker  | Starting docker-machine';
 
         $command = [
             'docker-machine',
             'start',
             $machineName,
         ];
-        $this->process($command, ['print' => true]);
+        $this->process($command, ['print' => '.']);
+        echo "\n";
     }
 
     private function certsDockerMachine()
@@ -890,7 +950,7 @@ trait Machine
     private function createDockerMachine()
     {
         $machineName = $this->getMachineName();
-        $this->message('Creating docker-machine');
+        $this->message('docker  | Creating docker-machine');
         $command = [
             'docker-machine',
             'create',

@@ -250,6 +250,33 @@ class Command extends \Peanut\Console\Command
         return '';
     }
 
+    public function getMachineEnvironment()
+    {
+        if (true === isset($this->config['environment'])) {
+            return $this->config['environment'];
+        }
+
+        return [];
+    }
+
+    public function getMachineEnvironmentMemorySize()
+    {
+        if (true === isset($this->config['environment']['memory_size'])) {
+            return $this->config['environment']['memory_size'];
+        }
+
+        return 0;
+    }
+
+    public function getMachineEnvironmentInitScripts()
+    {
+        if (true === isset($this->config['environment']['init_scripts'])) {
+            return $this->config['environment']['init_scripts'];
+        }
+
+        return [];
+    }
+
     /**
      * @return string
      * @param mixed $name
