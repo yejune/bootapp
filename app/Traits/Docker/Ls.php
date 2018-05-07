@@ -89,18 +89,20 @@ trait Ls
 
             $table = $this->table($docker);
         } else {
+            $dockerMachineIp = $this->getMachineIp();
+
             foreach ($psList as $str) {
                 parse_str($str, $a);
                 if (false === isset($a['id']) || false === isset($ilist[$a['id']])) {
                     continue;
                 }
 
-                $tmp  = array_merge($a, $ilist[$a['id']]);
-                $name = trim($tmp['name'], '/');
-
-                $ports    = explode(',', $tmp['ports']);
-                $domain   = explode(' ', $tmp['domain']);
-                $max      = max(count($ports), count($domain));
+                $tmp          = array_merge($a, $ilist[$a['id']]);
+                $name         = trim($tmp['name'], '/');
+                $tmp['ports'] = str_replace('0.0.0.0', $dockerMachineIp, $tmp['ports']);
+                $ports        = explode(',', $tmp['ports']);
+                $domain       = explode(' ', $tmp['domain']);
+                $max          = max(count($ports), count($domain));
                 if ($max == 1) {
                     $tmp = [
                         'service' => $tmp['service'],
