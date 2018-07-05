@@ -358,12 +358,21 @@ class Command extends \Peanut\Console\Command
 
         return $this->config;
     }
-
+    public function isLinux(){
+        if('LINUX' == strtoupper(PHP_OS)) {
+            return true;
+        }
+        return false;        
+    }
     /**
      * @return string
      */
     public function getMachineIp()
     {
+        if($this->isLinux()) {
+            return '198.19.129.30';
+            return $this->process('docker run --net=host codenvy/che-ip', ['print' => false]);
+        }
         return $this->process([
             'docker-machine',
             'ip',

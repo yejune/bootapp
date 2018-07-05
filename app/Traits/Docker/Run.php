@@ -297,9 +297,11 @@ trait Run
                     if ($subnet) {
                         $networkCreateCommand[] = '--subnet='.implode(' --subnet=', $subnet);
                     } else {
+                        
                         $subnetFile = $this->process('echo $HOME', ['print' => false])->toString().'/.docker/docker-machine-subnet.yaml';
 
                         if (false === is_file($subnetFile)) {
+                            mkdir($this->process('echo $HOME', ['print' => false])->toString().'/.docker/');
                             $this->process('touch '.$subnetFile, ['print' => false]);
                         }
 
@@ -331,6 +333,7 @@ trait Run
 
                             while (1) {
                                 $subnet = '172.'.rand(0, 255).'.0.0/16';
+                                //$subnet = '172.17.0.0/16';
 
                                 if ($subnet == $bridge) {
                                     continue;

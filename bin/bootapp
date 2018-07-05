@@ -79,5 +79,5 @@ try {
 
     $app->match();
 } catch (\Peanut\Console\Exception $e) {
-    print_r($e->getMessage());
+    print_r($e->getMessage().' in '.$e->getFile().' on '.$e->getLine().PHP_EOL);
 }
