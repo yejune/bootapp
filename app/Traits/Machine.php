@@ -40,6 +40,8 @@ trait Machine
      */
     public function initMachine()
     {
+        if($this->isLinux()) return true;
+
         $machineStatus = $this->getMachineStatus();
         $machineName   = $this->getMachineName();
         $this->message('docker  | Machine status "'.$machineStatus.'"');
@@ -405,33 +407,37 @@ trait Machine
                 throw new \Peanut\Console\Exception('guest ip not found');
             }
             */
-            $dockerMachineIp = $this->getMachineIp();
+            if($this->isLinux()) {
 
-            if (!$dockerMachineIp) {
-                throw new \Peanut\Console\Exception('guest ip not found');
+            } else {
+                $dockerMachineIp = $this->getMachineIp();
+
+                if (!$dockerMachineIp) {
+                    throw new \Peanut\Console\Exception('guest ip not found');
+                }
+
+                $this->message(\Peanut\Console\Color::gettext('route   | ', 'white').'add '.$containerSubnet.' '.$dockerMachineIp);
+
+                $command = [
+                    'sudo',
+                    'route',
+                    '-n',
+                    'delete',
+                    $containerSubnet,
+                    $dockerMachineIp,
+                ];
+                $message = $this->process($command, ['print' => false]);
+
+                $command = [
+                    'sudo',
+                    'route',
+                    '-n',
+                    'add',
+                    $containerSubnet,
+                    $dockerMachineIp,
+                ];
+                $message = $this->process($command, ['print' => false]);
             }
-
-            $this->message(\Peanut\Console\Color::gettext('route   | ', 'white').'add '.$containerSubnet.' '.$dockerMachineIp);
-
-            $command = [
-                'sudo',
-                'route',
-                '-n',
-                'delete',
-                $containerSubnet,
-                $dockerMachineIp,
-            ];
-            $message = $this->process($command, ['print' => false]);
-
-            $command = [
-                'sudo',
-                'route',
-                '-n',
-                'add',
-                $containerSubnet,
-                $dockerMachineIp,
-            ];
-            $message = $this->process($command, ['print' => false]);
         }
     }
 
@@ -633,21 +639,36 @@ trait Machine
                     ];
                     $this->process($command, ['print' => false]);
 
-                    $command = [
-                        'cp',
-                        '/System/Library/OpenSSL/openssl.cnf',
-                        '/tmp/openssl.cnf',
-                    ];
+                    if($this->isLinux()) {
+                        $command = [
+                            'cp',
+                            '/etc/pki/tls/openssl.cnf',
+                            '/tmp/openssl.cnf',
+                        ];
+    
+                    } else {
+                        $command = [
+                            'cp',
+                            '/System/Library/OpenSSL/openssl.cnf',
+                            '/tmp/openssl.cnf',
+                        ];
+                    }
                     $this->process($command, ['print' => false]);
 
                     $command = [
                         'echo',
-                        '"[SAN]\nsubjectAltName=DNS:'.$domain.'"',
+                        '"[SAN]"',
                         '>>',
                         '/tmp/openssl.cnf',
                     ];
                     $this->process($command, ['print' => false]);
-
+                    $command = [
+                        'echo',
+                        '"subjectAltName=DNS:'.$domain.'"',
+                        '>>',
+                        '/tmp/openssl.cnf',
+                    ];
+                    $this->process($command, ['print' => false]);
                     $command = [
                         'openssl',
                         'req',
@@ -661,7 +682,7 @@ trait Machine
                         '-days',
                         '3650',
                         '-subj',
-                        '/C=US/ST=CA/L=MV/CN='.$domain,
+                        '/C=US/ST=CA/L=MV/O=Tech/OU=IT/CN='.$domain.'/emailAddress=admin@'.$domain,
                         '-reqexts SAN',
                         '-extensions SAN',
                         '-config',
@@ -672,21 +693,37 @@ trait Machine
                 }
 
                 if (true === file_exists($certfile)) {
-                    if ($hash = $this->getCertHashByDomain($domain)) {
-                        $this->process('sudo security delete-certificate -Z '.$hash.' /Library/Keychains/System.keychain', ['print' => false]);
+                    if($this->isLinux()) {
+                        $tmpCertFile = '/etc/pki/ca-trust/source/anchors/'.$domain.'.crt';
+
+                        $this->process('sudo update-ca-trust force-enable', ['print' => false]);
+                        $this->process('sudo update-ca-trust extract', ['print' => false]);
+                        
+                        $this->process('sudo rm -rf '.$tmpCertFile, ['print' => false]);
+
+                        $this->process('sudo cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
+                        $this->process('sudo chmod 0400 '.$tmpCertFile, ['print' => false]);
+                        $this->process('sudo update-ca-trust extract', ['print' => false]);
+
+                        $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
+                    } else {
+                        if ($hash = $this->getCertHashByDomain($domain)) {
+                            $this->process('sudo security delete-certificate -Z '.$hash.' /Library/Keychains/System.keychain', ['print' => false]);
+                        }
+    
+                        // mount 된 경로에 project forlder가 있을 경우 파일 위치 못찾는 현상 수정
+                        $tmpCertFile = '/tmp/'.md5($domain.'.crt');
+    
+                        $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
+                        $this->process('cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
+    
+                        $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertFile, ['print' => false]);
+    
+                        $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
+    
+                        $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
                     }
 
-                    // mount 된 경로에 project forlder가 있을 경우 파일 위치 못찾는 현상 수정
-                    $tmpCertFile = '/tmp/'.md5($domain.'.crt');
-
-                    $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
-                    $this->process('cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
-
-                    $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertFile, ['print' => false]);
-
-                    $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
-
-                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
                 }
                 //error
             }
