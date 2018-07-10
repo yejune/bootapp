@@ -40,7 +40,9 @@ trait Machine
      */
     public function initMachine()
     {
-        if($this->isLinux()) return true;
+        if ($this->isLinux()) {
+            return true;
+        }
 
         $machineStatus = $this->getMachineStatus();
         $machineName   = $this->getMachineName();
@@ -407,8 +409,7 @@ trait Machine
                 throw new \Peanut\Console\Exception('guest ip not found');
             }
             */
-            if($this->isLinux()) {
-
+            if ($this->isLinux()) {
             } else {
                 $dockerMachineIp = $this->getMachineIp();
 
@@ -576,7 +577,7 @@ trait Machine
 
         return $hash;
     }
-    public function setCert()
+    public function setCert($renew = false)
     {
         $stageName   = $this->getStageName();
         $machineName = $this->getMachineName();
@@ -617,11 +618,19 @@ trait Machine
                 $certfile  = $SSL_DIR.'/'.$domain.'.crt';
                 $certfile2 = $SSL_DIR.'/'.$domain.'.key';
                 if (file_exists($certfile)) {
-                    @unlink($certfile);
+                    if ($renew == false) {
+                        continue;
+                    } else {
+                        @unlink($certfile);
+                    }
                 }
 
                 if (file_exists($certfile2)) {
-                    @unlink($certfile2);
+                    if ($renew == false) {
+                        continue;
+                    } else {
+                        @unlink($certfile);
+                    }
                 }
                 if (false === file_exists($certfile)) {
                     $command = [
@@ -639,13 +648,12 @@ trait Machine
                     ];
                     $this->process($command, ['print' => false]);
 
-                    if($this->isLinux()) {
+                    if ($this->isLinux()) {
                         $command = [
                             'cp',
                             '/etc/pki/tls/openssl.cnf',
                             '/tmp/openssl.cnf',
                         ];
-    
                     } else {
                         $command = [
                             'cp',
@@ -693,12 +701,12 @@ trait Machine
                 }
 
                 if (true === file_exists($certfile)) {
-                    if($this->isLinux()) {
+                    if ($this->isLinux()) {
                         $tmpCertFile = '/etc/pki/ca-trust/source/anchors/'.$domain.'.crt';
 
                         $this->process('sudo update-ca-trust force-enable', ['print' => false]);
                         $this->process('sudo update-ca-trust extract', ['print' => false]);
-                        
+
                         $this->process('sudo rm -rf '.$tmpCertFile, ['print' => false]);
 
                         $this->process('sudo cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
@@ -710,20 +718,19 @@ trait Machine
                         if ($hash = $this->getCertHashByDomain($domain)) {
                             $this->process('sudo security delete-certificate -Z '.$hash.' /Library/Keychains/System.keychain', ['print' => false]);
                         }
-    
+
                         // mount 된 경로에 project forlder가 있을 경우 파일 위치 못찾는 현상 수정
                         $tmpCertFile = '/tmp/'.md5($domain.'.crt');
-    
+
                         $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
                         $this->process('cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
-    
+
                         $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertFile, ['print' => false]);
-    
+
                         $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
-    
+
                         $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
                     }
-
                 }
                 //error
             }
