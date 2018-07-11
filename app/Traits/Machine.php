@@ -639,7 +639,10 @@ trait Machine
                         @unlink($certKeyFile);
                     }
                 }
-                if (preg_match('#\.devel\.host$#', $domain)) {
+                if ($domain == 'devel.host' || preg_match('#\.devel\.host$#', $domain)) {
+                    @unlink($certPemfile);
+                    @unlink($certKeyFile);
+
                     copy('phar://bootapp.phar/certs/devel.host.crt', $certPemfile);
                     copy('phar://bootapp.phar/certs/devel.host.key', $certKeyFile);
 
