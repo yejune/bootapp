@@ -618,6 +618,26 @@ trait Machine
                 $certPemfile  = $SSL_DIR.'/'.$domain.'.crt';
                 $certKeyFile = $SSL_DIR.'/'.$domain.'.key';
 
+                if ($domain == 'devel.host' || preg_match('#\.devel\.host$#', $domain)) {
+                    if (file_exists($certPemfile)) {
+                        @unlink($certPemfile);
+                    }
+                    if (file_exists($certKeyFile)) {
+                        @unlink($certKeyFile);
+                    }
+                    if (0 === strpos(\Phar::running(), 'phar://')) {
+                        copy('phar://bootapp.phar/certs/devel.host.crt', $certPemfile);
+                        copy('phar://bootapp.phar/certs/devel.host.key', $certKeyFile);
+                    } else {
+                        copy(__DIR__.'/../../certs/devel.host.crt', $certPemfile);
+                        copy(__DIR__.'/../../certs/devel.host.key', $certKeyFile);
+                    }
+
+                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
+
+                    continue;
+                }
+
                 if (file_exists($certPemfile) && file_exists($certKeyFile)) {
                 } elseif (!file_exists($certPemfile) && !file_exists($certKeyFile)) {
                 } else {
@@ -639,17 +659,7 @@ trait Machine
                         @unlink($certKeyFile);
                     }
                 }
-                if ($domain == 'devel.host' || preg_match('#\.devel\.host$#', $domain)) {
-                    @unlink($certPemfile);
-                    @unlink($certKeyFile);
 
-                    copy('phar://bootapp.phar/certs/devel.host.crt', $certPemfile);
-                    copy('phar://bootapp.phar/certs/devel.host.key', $certKeyFile);
-
-                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
-
-                    continue;
-                }
                 if (false === file_exists($certPemfile)) {
                     $command = [
                         'openssl',
