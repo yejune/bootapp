@@ -615,24 +615,39 @@ trait Machine
                 $this->message(\Peanut\Console\Color::gettext('cert    | ', 'white').'domain '.$domain);
                 //$this->message(\Peanut\Console\Color::gettext('        | ', 'white').'key     ./var/certs/'.$domain.'.key');
 
-                $certfile  = $SSL_DIR.'/'.$domain.'.crt';
-                $certfile2 = $SSL_DIR.'/'.$domain.'.key';
-                if (file_exists($certfile)) {
+                $certPemfile  = $SSL_DIR.'/'.$domain.'.crt';
+                $certKeyFile = $SSL_DIR.'/'.$domain.'.key';
+
+                if (file_exists($certPemfile) && file_exists($certKeyFile)) {
+                } elseif (!file_exists($certPemfile) && !file_exists($certKeyFile)) {
+                } else {
+                    throw new \Peanut\Console\Exception('check '.$SSL_DIR.'/'.$domain.'.*');
+                }
+
+                if (file_exists($certPemfile)) {
                     if ($renew == false) {
                         continue;
                     } else {
-                        @unlink($certfile);
+                        @unlink($certPemfile);
                     }
                 }
 
-                if (file_exists($certfile2)) {
+                if (file_exists($certKeyFile)) {
                     if ($renew == false) {
                         continue;
                     } else {
-                        @unlink($certfile);
+                        @unlink($certKeyFile);
                     }
                 }
-                if (false === file_exists($certfile)) {
+                if (preg_match('#\.devel\.host$#', $domain)) {
+                    copy('phar://bootapp.phar/certs/devel.host.crt', $certPemfile);
+                    copy('phar://bootapp.phar/certs/devel.host.key', $certKeyFile);
+
+                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
+
+                    continue;
+                }
+                if (false === file_exists($certPemfile)) {
                     $command = [
                         'openssl',
                         'genrsa',
@@ -700,17 +715,17 @@ trait Machine
                     $this->process($command, ['print' => false]);
                 }
 
-                if (true === file_exists($certfile)) {
+                if (true === file_exists($certPemfile)) {
                     if ($this->isLinux()) {
-                        $tmpCertFile = '/etc/pki/ca-trust/source/anchors/'.$domain.'.crt';
+                        $tmpCertPemFile = '/etc/pki/ca-trust/source/anchors/'.$domain.'.crt';
 
                         $this->process('sudo update-ca-trust force-enable', ['print' => false]);
                         $this->process('sudo update-ca-trust extract', ['print' => false]);
 
-                        $this->process('sudo rm -rf '.$tmpCertFile, ['print' => false]);
+                        $this->process('sudo rm -rf '.$tmpCertPemFile, ['print' => false]);
 
-                        $this->process('sudo cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
-                        $this->process('sudo chmod 0400 '.$tmpCertFile, ['print' => false]);
+                        $this->process('sudo cp '.$certPemfile.' '.$tmpCertPemFile, ['print' => false]);
+                        $this->process('sudo chmod 0400 '.$tmpCertPemFile, ['print' => false]);
                         $this->process('sudo update-ca-trust extract', ['print' => false]);
 
                         $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
@@ -720,14 +735,14 @@ trait Machine
                         }
 
                         // mount 된 경로에 project forlder가 있을 경우 파일 위치 못찾는 현상 수정
-                        $tmpCertFile = '/tmp/'.md5($domain.'.crt');
+                        $tmpCertPemFile = '/tmp/'.md5($domain.'.crt');
 
-                        $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
-                        $this->process('cp '.$certfile.' '.$tmpCertFile, ['print' => false]);
+                        $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
+                        $this->process('cp '.$certPemfile.' '.$tmpCertPemFile, ['print' => false]);
 
-                        $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertFile, ['print' => false]);
+                        $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertPemFile, ['print' => false]);
 
-                        $this->process('rm -rf '.$tmpCertFile, ['print' => false]);
+                        $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
 
                         $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
                     }
