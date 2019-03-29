@@ -1036,6 +1036,7 @@ trait Machine
             '--virtualbox-memory=4096',
             '--virtualbox-disk-size=200000',
             '--virtualbox-cpu-count=2',
+            '--virtualbox-boot2docker-url=https://github.com/boot2docker/boot2docker/releases/download/v18.06.1-ce/boot2docker.iso',
             $machineName,
         ];
         $this->process($command, ['print' => true]);
