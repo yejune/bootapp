@@ -67,7 +67,13 @@ trait Machine
             $command = [
                 'VBoxManage showvminfo '.$machineName.' | grep "Memory size"',
             ];
-            $memorySize    = trim(str_replace(['Memory size:', 'MB'], '', $this->process($command, ['print' => false])));
+            $memoryString = $this->process($command, ['print' => false]);
+
+            if(1 === preg_match('#Memory size(:)?\s+(?P<memory_size>\d+)MB#', $memoryString, $m)) {
+                $memorySize = (int)$m['memory_size'];
+            } else {
+                $memorySize = (int)trim(str_replace(['Memory size:', 'MB'], '', $memoryString));
+            }
 
             if ($memorySize != $envMemorySize) {
                 if ('running' === $machineStatus) {

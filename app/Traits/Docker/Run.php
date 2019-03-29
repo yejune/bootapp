@@ -297,11 +297,13 @@ trait Run
                     if ($subnet) {
                         $networkCreateCommand[] = '--subnet='.implode(' --subnet=', $subnet);
                     } else {
-                        
-                        $subnetFile = $this->process('echo $HOME', ['print' => false])->toString().'/.docker/docker-machine-subnet.yaml';
+                        $subnetFileDir = $this->process('echo $HOME', ['print' => false])->toString().'/.docker'; 
+                        $subnetFile = $subnetFileDir.'/docker-machine-subnet.yaml';
 
                         if (false === is_file($subnetFile)) {
-                            mkdir($this->process('echo $HOME', ['print' => false])->toString().'/.docker/');
+                            if (false === is_dir($subnetFileDir)) {
+                                mkdir($subnetFileDir);
+                            }
                             $this->process('touch '.$subnetFile, ['print' => false]);
                         }
 
