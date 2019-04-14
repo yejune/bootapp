@@ -149,8 +149,13 @@ trait Machine
         $this->checkMachineInfo();
 
         $this->setSharedFolder($this->getCwd());
-        $this->setSharedFolder('/Users/');
-        $this->setSharedFolder('/Volumes/');
+
+        if (true === is_dir('/Users/')) {
+            $this->setSharedFolder('/Users/');
+        }
+        if (true === is_dir('/Volumes/')) {
+            $this->setSharedFolder('/Volumes/');
+        }
         $status = $this->getMachineStatus();
 
         if ('stopped' === $status) {
@@ -158,9 +163,13 @@ trait Machine
         }
 
         $this->setMount($this->getCwd());
-        $this->setMount('/Users/');
-        $this->setMount('/Volumes/');
 
+        if (true === is_dir('/Users/')) {
+            $this->setMount('/Users/');
+        }
+        if (true === is_dir('/Volumes/')) {
+            $this->setMount('/Volumes/');
+        }
         $this->setDocerHost();
 
         echo 'docker  | engine ready';
