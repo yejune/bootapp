@@ -69,7 +69,7 @@ trait Machine
             ];
             $memoryString = $this->process($command, ['print' => false]);
 
-            if(1 === preg_match('#Memory size(:)?\s+(?P<memory_size>\d+)MB#', $memoryString, $m)) {
+            if (1 === preg_match('#Memory size(:)?\s+(?P<memory_size>\d+)MB#', $memoryString, $m)) {
                 $memorySize = (int)$m['memory_size'];
             } else {
                 $memorySize = (int)trim(str_replace(['Memory size:', 'MB'], '', $memoryString));
@@ -148,14 +148,18 @@ trait Machine
     {
         $this->checkMachineInfo();
 
-        $this->setSharedFolder();
+        $this->setSharedFolder($this->getCwd());
+        $this->setSharedFolder('/Users/');
+        $this->setSharedFolder('/Volumes/');
         $status = $this->getMachineStatus();
 
         if ('stopped' === $status) {
             $this->startMachine();
         }
 
-        $this->setMount();
+        $this->setMount($this->getCwd());
+        $this->setMount('/Users/');
+        $this->setMount('/Volumes/');
 
         $this->setDocerHost();
 
@@ -188,11 +192,11 @@ trait Machine
         }
     }
 
-    public function setSharedFolder()
+    public function setSharedFolder($cwd)
     {
         $machineName = $this->getMachineName();
         // 검사할것 없이 /Volumes만 mount하면 됨, 딱한번만 하면 됨
-        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $this->getcwd(), 3);
+        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $cwd, 3);
         $path                       = implode(DIRECTORY_SEPARATOR, [$first, $name]);
 
         if (false === in_array($name, array_keys($this->sharedFolders))) {
@@ -249,12 +253,12 @@ trait Machine
         }
     }
 
-    public function setMount()
+    public function setMount($cwd)
     {
         $machineName                = $this->getMachineName();
-        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $this->getcwd(), 3);
+        list($first, $name, $third) = explode(DIRECTORY_SEPARATOR, $cwd, 3);
         $path                       = implode(DIRECTORY_SEPARATOR, [$first, $name]);
-
+        $shkey = md5($cwd);
         /*
         $command = [
             'docker-machine',
@@ -305,7 +309,7 @@ trait Machine
             '|',
             'sudo',
             'tee',
-            '/mnt/sda1/var/lib/boot2docker/bootlocal.sh',
+            '/mnt/sda1/var/lib/boot2docker/bootlocal'.$shkey.'.sh',
             "'",
         ];
 
@@ -326,7 +330,7 @@ trait Machine
             'sudo',
             'tee',
             '-a',
-            '/mnt/sda1/var/lib/boot2docker/bootlocal.sh',
+            '/mnt/sda1/var/lib/boot2docker/bootlocal'.$shkey.'.sh',
             "'",
         ];
         $this->process($command, ['print' => false]);
@@ -351,7 +355,7 @@ trait Machine
             'sudo',
             'tee',
             '-a',
-            '/mnt/sda1/var/lib/boot2docker/bootlocal.sh',
+            '/mnt/sda1/var/lib/boot2docker/bootlocal'.$shkey.'.sh',
             "'",
         ];
         $this->process($command, ['print' => false]);
@@ -363,7 +367,7 @@ trait Machine
             "'",
             'sudo',
             'sh',
-            '/mnt/sda1/var/lib/boot2docker/bootlocal.sh',
+            '/mnt/sda1/var/lib/boot2docker/bootlocal'.$shkey.'.sh',
             "'",
         ];
 
