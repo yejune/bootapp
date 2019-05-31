@@ -355,7 +355,7 @@ trait Machine
             'vboxsf',
             '-o',
             // 'umask=0022,gid=50,uid=1000',
-            'uid=1000,gid=50,dmode=0777,fmode=0777',
+            'iocharset=utf8,uid=1000,gid=50,dmode=0777,fmode=0777',
             // 'uid=`id -u docker`,gid=`id -g docker`,dmode=0777,fmode=0777',
             $name,
             $path,
