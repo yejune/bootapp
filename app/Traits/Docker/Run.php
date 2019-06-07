@@ -174,7 +174,7 @@ trait Run
                             if (true === isset($service['build']['context'])) {
                                 $buildOpts[] = $service['build']['context'];
                             } else {
-                                throw new \Console\Exception('build context not found');
+                                throw new \Exception('build context not found');
                             }
 
                             if (true === isset($service['build']['dockerfile'])) {
@@ -297,7 +297,7 @@ trait Run
                     if ($subnet) {
                         $networkCreateCommand[] = '--subnet='.implode(' --subnet=', $subnet);
                     } else {
-                        $subnetFileDir = $this->process('echo $HOME', ['print' => false])->toString().'/.docker'; 
+                        $subnetFileDir = $this->process('echo $HOME', ['print' => false])->toString().'/.docker';
                         $subnetFile = $subnetFileDir.'/docker-machine-subnet.yaml';
 
                         if (false === is_file($subnetFile)) {
