@@ -637,25 +637,28 @@ trait Machine
                 $certPemfile  = $SSL_DIR.'/'.$domain.'.crt';
                 $certKeyFile = $SSL_DIR.'/'.$domain.'.key';
 
-                if ($domain == 'devel.host' || preg_match('#\.devel\.host$#', $domain)) {
-                    if (file_exists($certPemfile)) {
-                        @unlink($certPemfile);
-                    }
-                    if (file_exists($certKeyFile)) {
-                        @unlink($certKeyFile);
-                    }
-                    if (0 === strpos(\Phar::running(), 'phar://')) {
-                        copy('phar://bootapp.phar/certs/devel.host.crt', $certPemfile);
-                        copy('phar://bootapp.phar/certs/devel.host.key', $certKeyFile);
-                    } else {
-                        copy(__DIR__.'/../../certs/devel.host.crt', $certPemfile);
-                        copy(__DIR__.'/../../certs/devel.host.key', $certKeyFile);
-                    }
+                foreach (['devel.host', 'mockup.host', 'mockin.host', 'resolv.host', 'faked.host'] as $checkDomain) {
+                    if ($domain == $checkDomain || preg_match('#'.addcslashes($checkDomain, '.').'$#', $domain)) {
+                        if (file_exists($certPemfile)) {
+                            @unlink($certPemfile);
+                        }
+                        if (file_exists($certKeyFile)) {
+                            @unlink($certKeyFile);
+                        }
+                        if (0 === strpos(\Phar::running(), 'phar://')) {
+                            copy('phar://bootapp.phar/certs/'.$checkDomain.'.crt', $certPemfile);
+                            copy('phar://bootapp.phar/certs/'.$checkDomain.'.key', $certKeyFile);
+                        } else {
+                            copy(__DIR__.'/../../certs/'.$checkDomain.'.crt', $certPemfile);
+                            copy(__DIR__.'/../../certs/'.$checkDomain.'.key', $certKeyFile);
+                        }
 
-                    $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
+                        $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
 
-                    continue;
+                        continue;
+                    }
                 }
+
 
                 if (file_exists($certPemfile) && file_exists($certKeyFile)) {
                 } elseif (!file_exists($certPemfile) && !file_exists($certKeyFile)) {
