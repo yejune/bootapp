@@ -88,6 +88,8 @@ class Command extends \Peanut\Console\Command
         });
 
         if ($process->getExitCode() && $process->getErrorOutput()) {
+            // $traces = debug_backtrace();
+            // print_r($traces[0]);
             $msg = trim($process->getErrorOutput()).'('.$process->getExitCode().')';
             throw new \Peanut\Console\Exception($msg);
         }
@@ -362,7 +364,7 @@ class Command extends \Peanut\Console\Command
         if('LINUX' == strtoupper(PHP_OS)) {
             return true;
         }
-        return false;        
+        return false;
     }
     /**
      * @return string
