@@ -639,21 +639,24 @@ trait Machine
 
                 foreach (['devel.host', 'mockup.host', 'mockin.host', 'resolv.host', 'faked.host'] as $checkDomain) {
                     if ($domain == $checkDomain || preg_match('#'.addcslashes($checkDomain, '.').'$#', $domain)) {
-                        if (file_exists($certPemfile)) {
-                            @unlink($certPemfile);
+                        if (true === file_exists($certPemfile)) {
+                            if (0 === strpos(\Phar::running(), 'phar://')) {
+                                copy('phar://bootapp.phar/certs/'.$checkDomain.'.crt', $certPemfile);
+                                $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
+                            } else {
+                                copy(__DIR__.'/../../certs/'.$checkDomain.'.crt', $certPemfile);
+                                $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'exists ./var/certs/'.$domain.'.crt');
+                            }
                         }
-                        if (file_exists($certKeyFile)) {
-                            @unlink($certKeyFile);
+                        if (true === file_exists($certKeyFile)) {
+                            if (0 === strpos(\Phar::running(), 'phar://')) {
+                                copy('phar://bootapp.phar/certs/'.$checkDomain.'.key', $certKeyFile);
+                                $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
+                            } else {
+                                copy(__DIR__.'/../../certs/'.$checkDomain.'.key', $certKeyFile);
+                                $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'exists ./var/certs/'.$domain.'.crt');
+                            }
                         }
-                        if (0 === strpos(\Phar::running(), 'phar://')) {
-                            copy('phar://bootapp.phar/certs/'.$checkDomain.'.crt', $certPemfile);
-                            copy('phar://bootapp.phar/certs/'.$checkDomain.'.key', $certKeyFile);
-                        } else {
-                            copy(__DIR__.'/../../certs/'.$checkDomain.'.crt', $certPemfile);
-                            copy(__DIR__.'/../../certs/'.$checkDomain.'.key', $certKeyFile);
-                        }
-
-                        $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'install ./var/certs/'.$domain.'.crt');
 
                         continue;
                     }
