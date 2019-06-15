@@ -415,6 +415,7 @@ trait Run
                     }
                 }
 
+
                 if (true === isset($service['networks'])) {
                     foreach ($service['networks'] as $name => $conf) {
                         if (true === isset($conf['ipv4_address'])) {
@@ -579,6 +580,23 @@ trait Run
                 file_put_contents($this->getcwd().'/.bootapp.log', date('Y-m-d H:i:s').PHP_EOL.implode(' ', $command).PHP_EOL.PHP_EOL, FILE_APPEND);
 
                 $this->process($command, ['print' => '.']); // create
+
+                if (true === isset($service['networks'])) {
+                    foreach ($service['networks'] as $networkName) {
+
+                        $networkInspectCommand = [
+                            'docker',
+                            'network',
+                            'connect',
+                            $networkName,
+                            $service['name'],
+                            '2>&1',
+                        ];
+                        $subnet = $this->process($networkInspectCommand, ['print' => false])->toArray();
+
+                        //$command[] = '--net='.$networkName;
+                    }
+                }
 
                 if ('attach' == $mode) {
                     $command = [

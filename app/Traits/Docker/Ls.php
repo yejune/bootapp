@@ -24,7 +24,7 @@ trait Ls
             $command = [
                 'docker',
                 'inspect',
-                '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
+                '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}},{{end}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
                 '$(docker ps -q)',
                 '2>&1',
             ];
@@ -44,7 +44,7 @@ trait Ls
 
                 parse_str($split[0], $b);
                 $b['domain'] = '';
-
+                $b['ip'] = trim($b['ip'], ',');
                 $envs = json_decode($split[1], true);
 
                 foreach ($envs as $env) {

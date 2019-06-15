@@ -482,7 +482,7 @@ trait Machine
         $command = [
             'docker',
             'inspect',
-            '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
+            '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}},{{end}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
             '$(docker ps -q)',
         ];
 
@@ -512,7 +512,7 @@ trait Machine
             $split = explode('&env=', $str, 2);
 
             parse_str($split[0], $b);
-
+            $b['ip'] = explode(',', $b['ip'])[0];
             $envs = json_decode($split[1], true);
 
             $name = ltrim($b['name'], '/');
