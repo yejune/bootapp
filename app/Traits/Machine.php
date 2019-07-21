@@ -482,7 +482,7 @@ trait Machine
         $command = [
             'docker',
             'inspect',
-            '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}},{{end}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
+            '--format="name={{.Name}}&ip={{range .NetworkSettings.Networks}}{{.IPAddress}},{{end}}&ips={{json .NetworkSettings.Networks}}&service={{index .Config.Labels \"com.docker.bootapp.service\"}}&id={{.Id}}&env={{json .Config.Env}}"',
             '$(docker ps -q)',
         ];
 
@@ -522,7 +522,9 @@ trait Machine
                     list($key, $domain) = explode('=', $env, 2);
 
                     if ('DOMAIN' == $key) {
-                        $domainList[$b['ip']] = $domain;
+                        $ips = json_decode($b['ips'], true);
+                        $ip = $ips['default['.$projectName.']']['IPAddress'];
+                        $domainList[$ip] = $domain;
                     }
                 }
             }
