@@ -479,7 +479,15 @@ trait Run
                 $addHost = [];
 
                 if (true === isset($service['links'])) {
-                    foreach ($service['links'] as $key => $value) {
+                    foreach ($service['links'] as $key => $link) {
+                        $tail = '';
+                        if(false !== strpos($link, ':')) {
+                            $tmp = explode(':', $link, 2);
+                            $value = $tmp[0];
+                            $tail = ':'.$tmp[1];
+                        } else {
+                            $value = $link;
+                        }
                         foreach ($this->networkName as $networkName) {
                             $inspectCommand = [
                                 'docker',
@@ -498,7 +506,7 @@ trait Run
                             }
                         }
 
-                        $command[] = '--link='.$this->getContainerName($value);
+                        $command[] = '--link='.$this->getContainerName($value).$tail;
                     }
                 }
 

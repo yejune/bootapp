@@ -48,7 +48,17 @@ trait Compose
                 $links = [];
 
                 foreach ($services as $key => $value) {
-                    $links[$key] = isset($value['links']) ? $value['links'] : [];
+                    if (true === isset($value['links'])) {
+                        foreach ($value['links'] as $link) {
+                            if (false !== strpos($link, ':')) {
+                                $links[$key][] = explode(':', $link)[0];
+                            } else {
+                                $links[$key][] = $link;
+                            }
+                        }
+                    } else {
+                        $links[$key] = [];
+                    }
                 }
 
                 try {
