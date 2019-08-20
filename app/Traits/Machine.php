@@ -190,8 +190,7 @@ trait Machine
 
             $tmp = $this->process($command, ['print' => '.'])->toString();
             echo '.';
-
-            if (1 === preg_match('#^Containers#', $tmp)) {
+            if (1 === preg_match('#Containers#', $tmp)) {
                 //sleep(1);
                 echo ' ok'.PHP_EOL;
                 break;
