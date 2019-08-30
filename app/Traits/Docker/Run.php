@@ -481,7 +481,7 @@ trait Run
                 if (true === isset($service['links'])) {
                     foreach ($service['links'] as $key => $link) {
                         $tail = '';
-                        if(false !== strpos($link, ':')) {
+                        if (false !== strpos($link, ':')) {
                             $tmp = explode(':', $link, 2);
                             $value = $tmp[0];
                             $tail = ':'.$tmp[1];
@@ -523,6 +523,10 @@ trait Run
 
                 if (true === isset($service['net'])) {
                     $command[] = '--net='.$service['net'];
+                }
+
+                if (true === isset($service['ip'])) {
+                    $command[] = '--ip='.$service['ip'];
                 }
 
                 if (true === isset($service['working_dir'])) {
@@ -570,6 +574,7 @@ trait Run
                     //} else {
                     //    throw new \Peanut\Console\Exception('domain name not valid');
                     //}
+                    //$command[] = '--add-host="'.$service['environment']['DOMAIN'].'":127.0.0.1';
                 }
 
                 if (true === isset($service['image'])) {
@@ -591,7 +596,6 @@ trait Run
 
                 if (true === isset($service['networks'])) {
                     foreach ($service['networks'] as $networkName) {
-
                         $networkInspectCommand = [
                             'docker',
                             'network',
