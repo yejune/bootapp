@@ -487,8 +487,6 @@ trait Machine
 
         $inspectList = $this->process($command, ['print' => false])->toArray();
 
-        //print_r($inspectList);
-        //exit();
         $machineName = $this->getMachineName();
         $projectName = $this->getProjectName();
 
@@ -521,8 +519,11 @@ trait Machine
                     list($key, $domain) = explode('=', $env, 2);
 
                     if ('DOMAIN' == $key) {
-                        $ips = json_decode($b['ips'], true);
-                        $ip = $ips['default['.$projectName.']']['IPAddress'];
+                        $parts = json_decode($b['ips'], true);
+                        foreach($parts as $ips => $part) {
+                            $ip = $part['IPAddress'];
+                            break;
+                        }
                         $domainList[$ip] = $domain;
                     }
                 }
