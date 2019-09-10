@@ -45,34 +45,39 @@ class Task extends Command
      */
     public function dockerTask($task, $action)
     {
-        $containerName = $this->getContainerName($task['container']);
+        if(true === isset($task['run'])) {
+            $command[] = $task['run'];
+        } else {
+            $containerName = $this->getContainerName($task['container']);
 
-        $command = [
-            'docker',
-            'exec',
-        ];
+            $command = [
+                'docker',
+                'exec',
+            ];
 
-        if (true === isset($task['user'])) {
-            $command[] = '--user='.$task['user'];
+            if (true === isset($task['user'])) {
+                $command[] = '--user='.$task['user'];
+            }
+
+            $command[] = '-it';
+            $command[] = $containerName;
+            $command[] = 'sh -c';
+            $command[] = '"';
+
+            if (true === isset($task['working_dir'])) {
+                $command[] = 'cd '.$task['working_dir'];
+                $command[] = '&&';
+            }
+
+            $command[] = $task['cmd'];
+
+            if ($action) {
+                $command[] = $action;
+            }
+
+            $command[] = '"';
         }
 
-        $command[] = '-it';
-        $command[] = $containerName;
-        $command[] = 'sh -c';
-        $command[] = '"';
-
-        if (true === isset($task['working_dir'])) {
-            $command[] = 'cd '.$task['working_dir'];
-            $command[] = '&&';
-        }
-
-        $command[] = $task['cmd'];
-
-        if ($action) {
-            $command[] = $action;
-        }
-
-        $command[] = '"';
 
         echo 'command | ';
         echo \Peanut\Console\Color::gettext(implode(' ', $command), 'white').PHP_EOL.PHP_EOL;
