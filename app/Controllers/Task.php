@@ -46,7 +46,7 @@ class Task extends Command
     public function dockerTask($task, $action)
     {
         if(true === isset($task['run'])) {
-            $command[] = $task['run'];
+            $command[] = str_replace('$(cwd)',$this->cwd,$task['run']);
         } else {
             $containerName = $this->getContainerName($task['container']);
 
