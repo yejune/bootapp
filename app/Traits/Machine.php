@@ -520,7 +520,7 @@ trait Machine
 
                     if ('DOMAIN' == $key) {
                         $parts = json_decode($b['ips'], true);
-                        foreach($parts as $ips => $part) {
+                        foreach ($parts as $ips => $part) {
                             $ip = $part['IPAddress'];
                             break;
                         }
@@ -623,12 +623,13 @@ trait Machine
             $SSL_DIR = $this->getcwd().'/var/certs';
             if (false === is_dir($this->getcwd().'/var')) {
                 mkdir($this->getcwd().'/var');
+                //shell_exec('mkdir -p '.$SSL_DIR);
             }
             if (false === is_dir($this->getcwd().'/var/certs')) {
                 mkdir($this->getcwd().'/var/certs');
+                //shell_exec('mkdir -p '.$SSL_DIR);
             }
 
-            shell_exec('mkdir -p '.$SSL_DIR);
 
             foreach ($domainList as $ip => $domain) {
                 $sslname = $SSL_DIR.'/'.$domain;
@@ -680,7 +681,7 @@ trait Machine
                         'openssl',
                         'genrsa',
                         '-out',
-                        $sslname.'.key',
+                        '"'.$sslname.'.key"',
                         '1024',
                     ];
                     $this->process($command, ['print' => false]);
@@ -726,9 +727,9 @@ trait Machine
                         '-new',
                         '-x509',
                         '-key',
-                        $sslname.'.key',
+                        '"'.$sslname.'.key"',
                         '-out',
-                        $sslname.'.crt',
+                        '"'.$sslname.'.crt"',
                         '-sha256',
                         '-days',
                         '3650',
@@ -752,7 +753,7 @@ trait Machine
 
                         $this->process('sudo rm -rf '.$tmpCertPemFile, ['print' => false]);
 
-                        $this->process('sudo cp '.$certPemfile.' '.$tmpCertPemFile, ['print' => false]);
+                        $this->process('sudo cp "'.$certPemfile.'" '.$tmpCertPemFile, ['print' => false]);
                         $this->process('sudo chmod 0400 '.$tmpCertPemFile, ['print' => false]);
                         $this->process('sudo update-ca-trust extract', ['print' => false]);
 
@@ -766,7 +767,7 @@ trait Machine
                         $tmpCertPemFile = '/tmp/'.md5($domain.'.crt');
 
                         $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
-                        $this->process('cp '.$certPemfile.' '.$tmpCertPemFile, ['print' => false]);
+                        $this->process('cp "'.$certPemfile.'" '.$tmpCertPemFile, ['print' => false]);
 
                         $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertPemFile, ['print' => false]);
 
