@@ -519,6 +519,11 @@ trait Run
                         $command[] = '--add-host="'.$value.'"';
                     }
                 }
+                if (true === isset($service['healthcheck'])) {
+                    if (true === isset($service['healthcheck']['disabled']) && $service['healthcheck']['disabled']) {
+                        $command[] = '--no-healthcheck';
+                    }
+                }
                 //$command[] = '-P';
 
                 if (true === isset($service['net'])) {
