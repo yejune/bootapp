@@ -682,7 +682,7 @@ trait Machine
                         'genrsa',
                         '-out',
                         '"'.$sslname.'.key"',
-                        '1024',
+                        '2048',
                     ];
                     $this->process($command, ['print' => false]);
 
