@@ -639,6 +639,7 @@ trait Machine
 
                 $certPemfile  = $SSL_DIR.'/'.$domain.'.crt';
                 $certKeyFile = $SSL_DIR.'/'.$domain.'.key';
+                $clientCertPemfile  = $SSL_DIR.'/'.$domain.'.client.crt';
 
                 foreach (['devel.host', 'mockup.host', 'mockin.host', 'resolv.host', 'faked.host'] as $checkDomain) {
                     if ($domain == $checkDomain || preg_match('#'.addcslashes($checkDomain, '.').'$#', $domain)) {
@@ -673,6 +674,14 @@ trait Machine
                         continue;
                     } else {
                         @unlink($certKeyFile);
+                    }
+                }
+
+                if (file_exists($clientCertPemfile)) {
+                    if ($renew == false) {
+                        continue;
+                    } else {
+                        @unlink($clientCertPemfile);
                     }
                 }
 
@@ -742,7 +751,101 @@ trait Machine
                     ];
 
                     $this->process($command, ['print' => false]);
+
+
+                    $command = [
+                        'cat',
+                        '"'.$sslname.'.crt"',
+                        '"'.$sslname.'.key"',
+                        ' > "'.$sslname.'.pem"',
+                    ];
+
+                    $this->process($command, ['print' => false]);
                 }
+
+
+                if (true === file_exists($certPemfile)) {
+                    $command = [
+                        'openssl',
+                        'genrsa',
+                        '-out',
+                        '"'.$sslname.'.client.key"',
+                        '2048',
+                    ];
+                    $this->process($command, ['print' => false]);
+
+                    $command = [
+                        'rm -rf',
+                        '/tmp/openssl.cnf',
+                    ];
+                    $this->process($command, ['print' => false]);
+
+                    if ($this->isLinux()) {
+                        $command = [
+                            'cp',
+                            '/etc/pki/tls/openssl.cnf',
+                            '/tmp/openssl.cnf',
+                        ];
+                    } else {
+                        $command = [
+                            'cp',
+                            '/System/Library/OpenSSL/openssl.cnf',
+                            '/tmp/openssl.cnf',
+                        ];
+                    }
+                    $this->process($command, ['print' => false]);
+
+                    $command = [
+                        'echo',
+                        '"[SAN]"',
+                        '>>',
+                        '/tmp/openssl.cnf',
+                    ];
+                    $this->process($command, ['print' => false]);
+                    $command = [
+                        'echo',
+                        '"subjectAltName=DNS:'.$domain.'"',
+                        '>>',
+                        '/tmp/openssl.cnf',
+                    ];
+                    $this->process($command, ['print' => false]);
+
+                    $command = [
+                        'openssl',
+                        'req',
+                        '-new',
+                        //'-x509',
+                        '-key',
+                        '"'.$sslname.'.client.key"',
+                        '-out',
+                        '"'.$sslname.'.client.csr"',
+                        '-sha256',
+                        '-subj',
+                        '/C=US/ST=CA/L=MV/O=Tech/OU=IT/CN='.$domain.'/emailAddress=admin@'.$domain,
+                        '-reqexts SAN',
+                        '-extensions SAN',
+                        '-config',
+                        '/tmp/openssl.cnf',
+                    ];
+
+                    $this->process($command, ['print' => false]);
+                    $command = [
+                        'openssl x509 -req',
+                        '-days',
+                        '3650',
+                        '-in',
+                        '"'.$sslname.'.client.csr"',
+                        '-CA',
+                        '"'.$sslname.'.pem"',
+                        ' -CAkey',
+                        '"'.$sslname.'.key"',
+                        '-CAcreateserial -out',
+                        '"'.$sslname.'.client.crt"',
+                    ];
+
+                    $this->process($command, ['print' => false]);
+                }
+
 
                 if (true === file_exists($certPemfile)) {
                     if ($this->isLinux()) {
@@ -771,7 +874,17 @@ trait Machine
 
                         $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertPemFile, ['print' => false]);
 
+                        $tmpCertPemFile = '/tmp/'.md5($domain.'.client.crt');
+
                         $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
+
+                        $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
+                        $this->process('cp "'.$certPemfile.'" '.$tmpCertPemFile, ['print' => false]);
+
+                        $this->process('sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '.$tmpCertPemFile, ['print' => false]);
+
+                        $this->process('rm -rf '.$tmpCertPemFile, ['print' => false]);
+
 
                         $this->message(\Peanut\Console\Color::gettext('        | ', 'white').'trusted ./var/certs/'.$domain.'.crt');
                     }
