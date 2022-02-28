@@ -544,5 +544,11 @@
         "sha1": "35d10f70cad3eba6df3a17c45a3715e96c4ef773",
         "url": "https:\/\/github.com\/yejune\/bootapp\/blob\/0.2.98\/bootapp.phar?raw=true",
         "version": "0.2.98"
+    },
+    {
+        "name": "bootapp.phar",
+        "sha1": "23cefe4608e1865225e2c19d7a2e6e895d772ef3",
+        "url": "https:\/\/github.com\/yejune\/bootapp\/blob\/0.2.99\/bootapp.phar?raw=true",
+        "version": "0.2.99"
     }
 ]
