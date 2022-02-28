@@ -77,9 +77,9 @@ foreach ($finder as $fileInfo) {
 $stub = <<<STUB
 #!/usr/bin/env php
 <?php
-Phar::mapPhar('../{$pharName}');
-require 'phar://{$pharName}/bin/bootapp';
-__HALT_COMPILER();
+// Phar::mapPhar('../{$pharName}');
+// require 'phar://{$pharName}/bin/bootapp';
+// __HALT_COMPILER();
 STUB;
 
 $phar->setStub($stub);
