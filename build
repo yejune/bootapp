@@ -65,7 +65,7 @@ foreach ($finder as $fileInfo) {
 
 // Add bin/bootapp file
 echo "Add file: /bin/bootapp\n";
-$bootappContent = file_get_contents(__DIR__.'/bin/bootapp');
+$bootappContent = file_get_contents(__DIR__.'/bin/bootapp.php');
 $bootappContent = str_replace("#!/usr/bin/env php\n", '', $bootappContent);
 $bootappContent = str_replace('0.0.0', $version, $bootappContent);
 $bootappContent = str_replace('__FILE__', 'str_replace("phar://", "", Phar::running())', $bootappContent);
