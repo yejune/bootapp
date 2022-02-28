@@ -327,6 +327,8 @@ class Command extends \Peanut\Console\Command
                 true,
                 true
             );
+            var_dump($update);
+            exit;
             if (null !== $update) {
                 echo "print";
                 print_r($update);
