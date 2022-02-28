@@ -67,12 +67,12 @@ foreach ($finder as $fileInfo) {
 }
 
 // Add bin/bootapp file
-echo "Add file: /bin/bootapp\n";
-$bootappContent = file_get_contents(__DIR__.'/bootapp.phar');
-$bootappContent = str_replace("#!/usr/bin/env php\n", '', $bootappContent);
-$bootappContent = str_replace('0.0.0', $version, $bootappContent);
-$bootappContent = str_replace('__FILE__', 'str_replace("phar://", "", Phar::running())', $bootappContent);
-$phar->addFromString('bin/bootapp', $bootappContent);
+// echo "Add file: /bin/bootapp\n";
+// $bootappContent = file_get_contents(__DIR__.'/bootapp.phar');
+// $bootappContent = str_replace("#!/usr/bin/env php\n", '', $bootappContent);
+// $bootappContent = str_replace('0.0.0', $version, $bootappContent);
+// $bootappContent = str_replace('__FILE__', 'str_replace("phar://", "", Phar::running())', $bootappContent);
+// $phar->addFromString('bin/bootapp', $bootappContent);
 
 $stub = <<<STUB
 #!/usr/bin/env php
@@ -125,3 +125,12 @@ function versionup($version, $type)
 
     throw new \RuntimeException('version number did not pass validation.');
 }
+
+
+
+echo "Add file: /bin/bootapp\n";
+$bootappContent = file_get_contents(__DIR__.'/bootapp.phar');
+$bootappContent = str_replace("#!/usr/bin/env php\n", '', $bootappContent);
+$bootappContent = str_replace('0.0.0', $version, $bootappContent);
+$bootappContent = str_replace('__FILE__', 'str_replace("phar://", "", Phar::running())', $bootappContent);
+file_put_contents('bin/bootapp', $bootappContent);
