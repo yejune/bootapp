@@ -330,6 +330,7 @@ class Command extends \Peanut\Console\Command
             if ($this->verbose) {
                 $print = true;
                 $this->message(\Peanut\Console\Color::gettext('IN >> ', 'white').\Peanut\Console\Color::gettext($update, 'red'));
+                echo $update;
             }
             if (null !== $update) {
                 echo \Peanut\Console\Color::gettext('New version is available.', 'white', 'red').PHP_EOL;
