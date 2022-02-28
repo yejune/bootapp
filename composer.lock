@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fd42375b4d10aec08bde65441a61a0ca",
+    "content-hash": "ff8a5333958d39dea273b8445458b7f3",
     "packages": [
         {
             "name": "evenement/evenement",
@@ -366,12 +366,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/yejune/console.git",
-                "reference": "7f5557b9259a92d6e966cbf2599164cce19dbe69"
+                "reference": "f50805ec5e588421920904877696d89541478a0d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yejune/console/zipball/7f5557b9259a92d6e966cbf2599164cce19dbe69",
-                "reference": "7f5557b9259a92d6e966cbf2599164cce19dbe69",
+                "url": "https://api.github.com/repos/yejune/console/zipball/f50805ec5e588421920904877696d89541478a0d",
+                "reference": "f50805ec5e588421920904877696d89541478a0d",
                 "shasum": ""
             },
             "require": {
@@ -393,9 +393,9 @@
             "notification-url": "https://packagist.org/downloads/",
             "support": {
                 "issues": "https://github.com/yejune/console/issues",
-                "source": "https://github.com/yejune/console/tree/list"
+                "source": "https://github.com/yejune/console/tree/master"
             },
-            "time": "2018-03-19T05:23:23+00:00"
+            "time": "2022-02-28T20:53:48+00:00"
         },
         {
             "name": "react/child-process",
@@ -890,7 +890,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=5.5.9"
+        "php": ">=8"
     },
     "platform-dev": [],
     "plugin-api-version": "2.2.0"
