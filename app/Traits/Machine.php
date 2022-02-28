@@ -1092,10 +1092,30 @@ trait Machine
     private function getMachineStatus()
     {
         $machineName = $this->getMachineName();
+
+        $command = [
+            'VBoxManage',
+            'showvminfo',
+            $machineName,
+            '--machinereadable',
+            '|',
+            'grep',
+            'VMState=',
+            '2>&1',
+        ];
+        if (1 === preg_match(
+            '#VMState="(.*)"#',
+            $this->process($command, ['print' => false])->toString(),
+            $m
+        )
+        ) {
+            return $m[1];
+        }
+
         $command     = [
             'docker-machine',
             'status',
-            $machineName,
+            "'".$machineName."'",
             '2>&1',
         ];
 

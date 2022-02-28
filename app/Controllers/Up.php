@@ -40,7 +40,7 @@ class Up extends Command
      */
     public function exec(\Peanut\Console\Application $app, array $config)
     {
-        $this->process('sudo -v', ['print' => false]);
+        $this->process(['sudo', '-v'], ['print' => false]);
         $mode   = $app->getOption('attach') ? 'attach' : 'detach';
         $ispull = $app->getOption('pull') ? true : false;
 

@@ -360,8 +360,9 @@ class Command extends \Peanut\Console\Command
 
         return $this->config;
     }
-    public function isLinux(){
-        if('LINUX' == strtoupper(PHP_OS)) {
+    public function isLinux()
+    {
+        if ('LINUX' == strtoupper(PHP_OS)) {
             return true;
         }
         return false;
@@ -371,7 +372,7 @@ class Command extends \Peanut\Console\Command
      */
     public function getMachineIp()
     {
-        if($this->isLinux()) {
+        if ($this->isLinux()) {
             return '';
         }
         return $this->process([
