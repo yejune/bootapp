@@ -59,7 +59,7 @@ $finder->files()
 
 foreach ($finder as $fileInfo) {
     $file = str_replace(__DIR__, '', $fileInfo->getRealPath());
-    echo 'Add file: '.$file."\n";
+    echo 'Add file: '.$file.'('.$fileInfo->getRealPath().')'."\n";
     $phar->addFile($fileInfo->getRealPath(), $file);
 }
 
