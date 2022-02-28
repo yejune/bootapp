@@ -1,1 +1,0 @@
-php -dphar.readonly=0 build -v

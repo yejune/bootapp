@@ -162,6 +162,8 @@ trait Machine
             $this->startMachine();
         }
 
+        $this->checkMachineStandby();
+
         $this->setMount($this->getCwd());
 
         if (true === is_dir('/Users/')) {
@@ -381,6 +383,34 @@ trait Machine
 
         $this->process($command, ['print' => false]);
     }
+
+
+    public function checkMachineStandby()
+    {
+        $machineName                = $this->getMachineName();
+
+        while (true) {
+            $command = [
+                'docker-machine',
+                'ssh',
+                $machineName,
+                "echo 'ok' 2>&1;",
+            ];
+
+            $tmp = $this->process($command, ['print' => false])->toString();
+            ;
+            echo '.';
+
+            if ('ok' == $tmp) {
+                //sleep(1);
+                echo ' ok'.PHP_EOL;
+                break;
+            }
+
+            sleep(3);
+        }
+    }
+
 
     public function setRoute()
     {
@@ -1128,9 +1158,10 @@ trait Machine
         echo 'docker  | Starting docker-machine';
 
         $command = [
-            'docker-machine',
-            'start',
-            $machineName,
+            'VBoxManage',
+            'startvm',
+            '"'.$machineName.'"',
+            //'--type headless'
         ];
         $this->process($command, ['print' => '.']);
         echo "\n";
