@@ -327,6 +327,7 @@ class Command extends \Peanut\Console\Command
                 true,
                 true
             );
+            echo $version;
             var_dump($update);
             exit;
             if (null !== $update) {
