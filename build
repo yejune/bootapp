@@ -75,7 +75,7 @@ $stub = <<<STUB
 #!/usr/bin/env php
 <?php
 Phar::mapPhar('{$pharName}');
-require 'phar://{$pharName}/bin/bootapp';
+require 'phar://{$pharName}';
 __HALT_COMPILER();
 STUB;
 
