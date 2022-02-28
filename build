@@ -38,6 +38,11 @@ if (file_exists($pharFile)) {
     unlink($pharFile);
 }
 
+$binFile = './bin/bootapp';
+if (file_exists($binFile)) {
+    unlink($binFile);
+}
+
 $phar = new \Phar($pharFile, 0, $pharName);
 $phar->setSignatureAlgorithm(\Phar::SHA1);
 $phar->startBuffering();
