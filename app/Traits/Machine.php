@@ -162,8 +162,6 @@ trait Machine
             $this->startMachine();
         }
 
-        $this->checkMachineStandby();
-
         $this->setMount($this->getCwd());
 
         if (true === is_dir('/Users/')) {
@@ -385,7 +383,7 @@ trait Machine
     }
 
 
-    public function checkMachineStandby()
+    public function waitMachineStandby()
     {
         $machineName                = $this->getMachineName();
 
@@ -1164,6 +1162,9 @@ trait Machine
             //'--type headless'
         ];
         $this->process($command, ['print' => '.']);
+
+        $this->waitMachineStandby();
+
         echo "\n";
     }
 
