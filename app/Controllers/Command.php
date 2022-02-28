@@ -327,13 +327,8 @@ class Command extends \Peanut\Console\Command
                 true,
                 true
             );
-            echo $version;
-            var_dump($update);
-            exit;
-            if (null !== $update) {
-                echo "print";
-                print_r($update);
 
+            if (null !== $update) {
                 echo \Peanut\Console\Color::gettext('New version is available.', 'white', 'red').PHP_EOL;
                 echo \Peanut\Console\Color::gettext('Please execute `bootapp self-update` or use --no-update(-n) option', 'white', 'red').PHP_EOL;
                 exit;
