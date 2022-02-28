@@ -134,3 +134,4 @@ $bootappContent = str_replace("#!/usr/bin/env php\n", '', $bootappContent);
 $bootappContent = str_replace('0.0.0', $version, $bootappContent);
 $bootappContent = str_replace('__FILE__', 'str_replace("phar://", "", Phar::running())', $bootappContent);
 file_put_contents('bin/bootapp', $bootappContent);
+chmod('bin/bootapp', 0777);
