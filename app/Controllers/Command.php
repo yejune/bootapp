@@ -285,7 +285,7 @@ class Command extends \Peanut\Console\Command
      */
     public function getContainerName($name)
     {
-        return $this->getProjectName().'-'.$name;
+        return $name;
     }
 
     /**
