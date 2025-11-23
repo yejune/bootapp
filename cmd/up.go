@@ -89,21 +89,8 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Initialize project manager
-	projectMgr, err := network.NewProjectManager()
-	if err != nil {
-		return fmt.Errorf("failed to initialize project manager: %w", err)
-	}
-
-	// Get or create project configuration
-	netConfig, err := projectMgr.GetOrCreateProject(projectName, projectPath, baseDomain)
-	if err != nil {
-		return fmt.Errorf("failed to setup project: %w", err)
-	}
-	fmt.Printf("Subnet: %s\n", netConfig.Subnet)
-
 	// Validate sudo credentials upfront (needed for /etc/hosts)
-	fmt.Println("\nValidating sudo credentials (needed for /etc/hosts)...")
+	fmt.Println("\nValidating sudo credentials...")
 	if err := validateSudo(); err != nil {
 		return fmt.Errorf("sudo authentication required: %w", err)
 	}
@@ -114,20 +101,28 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Get container IPs from default compose network
+	// Get container IPs and network info from default compose network
 	fmt.Println("\nDiscovering containers...")
-	containerIPs, err := getContainerIPs(projectName)
+	containerIPs, networkSubnet, err := getContainerIPsAndSubnet(projectName)
 	if err != nil {
 		fmt.Printf("Warning: Could not get container IPs: %v\n", err)
 		containerIPs = make(map[string]string)
+	}
+	if networkSubnet != "" {
+		fmt.Printf("Network subnet: %s\n", networkSubnet)
 	}
 
 	// Build container info with domains (only for services with domain config)
 	containers := buildContainerInfo(containerIPs, serviceDomains)
 
-	// Update local config
-	if err := projectMgr.UpdateContainers(projectPath, containers); err != nil {
-		fmt.Printf("Warning: Could not save container info: %v\n", err)
+	// Save local config
+	localConfig := network.LocalConfig{
+		Project:    projectName,
+		Subnet:     networkSubnet,
+		Containers: containers,
+	}
+	if err := network.SaveLocalConfig(projectPath, &localConfig); err != nil {
+		fmt.Printf("Warning: Could not save config: %v\n", err)
 	}
 
 	// Print container info
@@ -146,10 +141,20 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to update /etc/hosts: %w", err)
 	}
 
-	// Setup routing (macOS only)
-	fmt.Println("\nSetting up routing...")
-	if err := route.SetupRoute(netConfig.Subnet); err != nil {
-		fmt.Printf("Warning: Route setup failed: %v\n", err)
+	// Setup routing (macOS only) - use actual network subnet
+	if networkSubnet != "" {
+		fmt.Println("\nSetting up routing...")
+		// Get first container IP for connectivity test
+		var testIP string
+		for _, info := range containers {
+			if info.IP != "" {
+				testIP = info.IP
+				break
+			}
+		}
+		if err := route.SetupRouteWithTest(networkSubnet, testIP); err != nil {
+			fmt.Printf("Warning: Route setup failed: %v\n", err)
+		}
 	}
 
 	// Print config file locations
@@ -303,23 +308,24 @@ func getContainerIPsFromNetwork(projectName, networkName string) (map[string]str
 	return containers, nil
 }
 
-func getContainerIPs(projectName string) (map[string]string, error) {
+// getContainerIPsAndSubnet returns container IPs and the network subnet
+func getContainerIPsAndSubnet(projectName string) (map[string]string, string, error) {
 	// List containers for this project
 	listCmd := exec.Command("docker", "ps", "-q", "--filter", fmt.Sprintf("label=com.docker.compose.project=%s", projectName))
 	output, err := listCmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	containerIDs := strings.Fields(string(output))
 	if len(containerIDs) == 0 {
-		return nil, fmt.Errorf("no containers found for project %s", projectName)
+		return nil, "", fmt.Errorf("no containers found for project %s", projectName)
 	}
 
 	containers := make(map[string]string)
+	var networkName string
 
 	for _, id := range containerIDs {
-		// Get container info as JSON for reliable IP extraction
 		inspectCmd := exec.Command("docker", "inspect", id)
 		output, err := inspectCmd.Output()
 		if err != nil {
@@ -334,27 +340,41 @@ func getContainerIPs(projectName string) (map[string]string, error) {
 		info := infos[0]
 		serviceName := info.Config.Labels["com.docker.compose.service"]
 
-		// Prefer default network IP (works with docker-mac-net-connect)
-		// Look for *_default network first, then any other
-		var fallbackIP string
+		// Prefer *_default network
 		for netName, net := range info.NetworkSettings.Networks {
 			if net.IPAddress != "" && serviceName != "" {
 				if strings.HasSuffix(netName, "_default") {
 					containers[serviceName] = net.IPAddress
+					networkName = netName
 					break
 				}
-				if fallbackIP == "" {
-					fallbackIP = net.IPAddress
+				if containers[serviceName] == "" {
+					containers[serviceName] = net.IPAddress
+					networkName = netName
 				}
 			}
 		}
-		// Use fallback if no default network found
-		if _, exists := containers[serviceName]; !exists && fallbackIP != "" {
-			containers[serviceName] = fallbackIP
-		}
 	}
 
-	return containers, nil
+	// Get subnet from the network
+	subnet := getNetworkSubnet(networkName)
+
+	return containers, subnet, nil
+}
+
+// getNetworkSubnet gets the subnet CIDR from a Docker network
+func getNetworkSubnet(networkName string) string {
+	if networkName == "" {
+		return ""
+	}
+
+	cmd := exec.Command("docker", "network", "inspect", networkName, "--format", "{{range .IPAM.Config}}{{.Subnet}}{{end}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(output))
 }
 
 // DockerContainerInfo for JSON parsing

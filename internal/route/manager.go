@@ -18,16 +18,6 @@ func IsDarwin() bool {
 	return runtime.GOOS == "darwin"
 }
 
-// CheckDockerMacNetConnect checks if docker-mac-net-connect is running on macOS
-func CheckDockerMacNetConnect() bool {
-	if !IsDarwin() {
-		return true // Not needed on Linux
-	}
-
-	cmd := exec.Command("pgrep", "-f", "docker-mac-net-connect")
-	output, _ := cmd.Output()
-	return len(output) > 0
-}
 
 // GetDockerVMGateway finds the Docker Desktop VM gateway IP on macOS
 // This is the IP we need to route container traffic through
@@ -57,8 +47,42 @@ func GetDockerVMGateway() (string, error) {
 	return "192.168.65.1", nil
 }
 
+// checkRouteExists checks if a route to the subnet already exists
+func checkRouteExists(subnet string) bool {
+	// Extract network address (e.g., "192.168.156" from "192.168.156.0/24")
+	parts := strings.Split(subnet, "/")
+	if len(parts) == 0 {
+		return false
+	}
+	ipParts := strings.Split(parts[0], ".")
+	if len(ipParts) < 3 {
+		return false
+	}
+	networkPrefix := strings.Join(ipParts[:3], ".")
+
+	cmd := exec.Command("netstat", "-rn")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(output), networkPrefix)
+}
+
+// checkConnectivity tests if we can reach an IP in the subnet
+func checkConnectivity(testIP string) bool {
+	cmd := exec.Command("ping", "-c", "1", "-t", "2", testIP)
+	return cmd.Run() == nil
+}
+
 // SetupRoute sets up routing for the subnet on macOS
+// Only adds route if no working route exists
 func SetupRoute(subnet string) error {
+	return SetupRouteWithTest(subnet, "")
+}
+
+// SetupRouteWithTest sets up routing with optional connectivity test
+func SetupRouteWithTest(subnet, testIP string) error {
 	if IsLinux() {
 		// Linux doesn't need routing setup - containers are directly accessible
 		return nil
@@ -68,10 +92,18 @@ func SetupRoute(subnet string) error {
 		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
 
-	// Check if docker-mac-net-connect is available
-	if CheckDockerMacNetConnect() {
-		fmt.Println("✓ docker-mac-net-connect detected, routes managed automatically")
-		return nil
+	// Check if route already exists
+	if checkRouteExists(subnet) {
+		// Route exists - test connectivity if testIP provided
+		if testIP != "" && checkConnectivity(testIP) {
+			fmt.Printf("✓ Route exists and working (tested %s)\n", testIP)
+			return nil
+		} else if testIP == "" {
+			fmt.Println("✓ Route already exists")
+			return nil
+		}
+		// Route exists but connectivity failed - replace it
+		fmt.Println("Route exists but connectivity failed, replacing...")
 	}
 
 	// Get Docker VM gateway
@@ -127,13 +159,5 @@ func PrintRouteInfo(subnet string) {
 		fmt.Println("Linux: Direct container access (no routing needed)")
 		return
 	}
-
-	if CheckDockerMacNetConnect() {
-		fmt.Println("✓ docker-mac-net-connect: Routes managed automatically")
-	} else {
-		fmt.Printf("Route configured for subnet %s\n", subnet)
-		fmt.Println("\nTIP: For easier routing, install docker-mac-net-connect:")
-		fmt.Println("  brew install chipmk/tap/docker-mac-net-connect")
-		fmt.Println("  sudo brew services start docker-mac-net-connect")
-	}
+	fmt.Printf("Route configured for subnet %s\n", subnet)
 }

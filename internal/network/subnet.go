@@ -38,6 +38,39 @@ type NetworkConfig struct {
 	Containers map[string]ContainerInfo `json:"containers"`
 }
 
+// LocalConfig is an alias for NetworkConfig (for cleaner API)
+type LocalConfig = NetworkConfig
+
+// SaveLocalConfig saves local config to project directory
+func SaveLocalConfig(projectPath string, config *LocalConfig) error {
+	localDir := filepath.Join(projectPath, localConfigDir)
+	if err := os.MkdirAll(localDir, 0755); err != nil {
+		return err
+	}
+
+	localPath := filepath.Join(localDir, localConfigFile)
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(localPath, data, 0644)
+}
+
+// LoadLocalConfig loads local config from project directory
+func LoadLocalConfig(projectPath string) (*LocalConfig, error) {
+	localPath := filepath.Join(projectPath, localConfigDir, localConfigFile)
+	data, err := os.ReadFile(localPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config LocalConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
 // ProjectManager manages project configurations
 type ProjectManager struct {
 	globalPath string
