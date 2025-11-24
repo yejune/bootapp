@@ -5,6 +5,7 @@ Docker CLI Plugin for multi-project Docker networking made easy.
 Automatically manages:
 - Unique subnet allocation per project (prevents conflicts)
 - /etc/hosts entries for containers with DOMAIN configuration
+- **SSL certificates** for domains in `SSL_DOMAINS` (auto-generated, system trusted)
 - Smart route setup for macOS (checks connectivity before adding routes)
 
 ## Installation
@@ -47,13 +48,21 @@ Supported file patterns:
 - `docker-compose.*.yml`, `docker-compose.*.yaml` (e.g., docker-compose.local.yml)
 - `compose.yml`, `compose.yaml`
 
+Options:
+- `-d, --detach`: Run in background (default: true)
+- `--no-build`: Don't build images
+- `--pull`: Pull images before starting
+- `-F, --force-recreate`: Force recreate containers + regenerate SSL certificates
+
 This will:
 1. Allocate unique subnet for the project (172.18-31.x.x range)
 2. Parse docker-compose file for DOMAIN/SSL_DOMAINS configuration
-3. Start containers with docker-compose up
-4. Discover container IPs from default compose network
-5. Add /etc/hosts entries for containers with domain config
-6. Setup routing if needed (macOS)
+3. **Generate SSL certificates** for `SSL_DOMAINS` (if not exists)
+4. **Install certificates to system trust store** (macOS Keychain / Linux ca-certificates)
+5. Start containers with docker-compose up
+6. Discover container IPs from default compose network
+7. Add /etc/hosts entries for containers with domain config
+8. Setup routing if needed (macOS)
 
 ### Stop containers
 ```bash
@@ -129,6 +138,66 @@ Only services with explicit domain configuration get /etc/hosts entries:
 ```
 
 Services without DOMAIN config (like redis above) are not added to /etc/hosts.
+
+## SSL Certificates
+
+### Automatic Generation
+
+bootapp automatically generates self-signed SSL certificates for domains specified in `SSL_DOMAINS`:
+
+```yaml
+services:
+  app:
+    image: nginx
+    environment:
+      SSL_DOMAINS: myapp.test
+    volumes:
+      - ./var/certs:/etc/nginx/certs:ro
+```
+
+Certificates are:
+- Generated in `./var/certs/` directory (`.crt`, `.key`, `.pem` files)
+- Automatically trusted in system keychain (macOS) or ca-certificates (Linux)
+- Valid for 10 years
+- Include proper SAN (Subject Alternative Name) for browser compatibility
+
+### Certificate Files
+
+```
+var/certs/
+├── myapp.test.crt    # Certificate
+├── myapp.test.key    # Private key
+└── myapp.test.pem    # Combined cert + key
+```
+
+### Force Regenerate
+
+To delete and regenerate certificates:
+
+```bash
+docker bootapp -f docker-compose.local.yml up -F
+```
+
+The `-F` flag will:
+1. Remove existing certificates from trust store
+2. Delete local certificate files
+3. Generate new certificates
+4. Install to trust store
+5. Force recreate containers
+
+### nginx Configuration Example
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name myapp.test;
+
+    ssl_certificate /etc/nginx/certs/myapp.test.crt;
+    ssl_certificate_key /etc/nginx/certs/myapp.test.key;
+
+    # ... rest of config
+}
+```
 
 ## macOS Networking
 

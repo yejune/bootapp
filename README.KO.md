@@ -5,6 +5,7 @@
 자동으로 관리:
 - 프로젝트별 고유 서브넷 할당 (충돌 방지)
 - DOMAIN 설정이 있는 컨테이너의 /etc/hosts 항목
+- **SSL 인증서** `SSL_DOMAINS` 도메인 자동 생성 및 시스템 신뢰 등록
 - macOS 스마트 라우트 설정 (연결 테스트 후 라우트 추가)
 
 ## 설치
@@ -47,13 +48,21 @@ Select file (1-3):
 - `docker-compose.*.yml`, `docker-compose.*.yaml` (예: docker-compose.local.yml)
 - `compose.yml`, `compose.yaml`
 
+옵션:
+- `-d, --detach`: 백그라운드 실행 (기본값: true)
+- `--no-build`: 이미지 빌드 안 함
+- `--pull`: 시작 전 이미지 pull
+- `-F, --force-recreate`: 컨테이너 강제 재생성 + SSL 인증서 재생성
+
 실행 시:
 1. 프로젝트에 고유 서브넷 할당 (172.18-31.x.x 범위)
 2. docker-compose 파일에서 DOMAIN/SSL_DOMAINS 설정 파싱
-3. docker-compose up으로 컨테이너 시작
-4. 기본 compose 네트워크에서 컨테이너 IP 감지
-5. 도메인 설정이 있는 컨테이너를 /etc/hosts에 추가
-6. 필요 시 라우팅 설정 (macOS)
+3. **SSL 인증서 생성** `SSL_DOMAINS` 도메인용 (없는 경우)
+4. **시스템 trust store에 인증서 설치** (macOS Keychain / Linux ca-certificates)
+5. docker-compose up으로 컨테이너 시작
+6. 기본 compose 네트워크에서 컨테이너 IP 감지
+7. 도메인 설정이 있는 컨테이너를 /etc/hosts에 추가
+8. 필요 시 라우팅 설정 (macOS)
 
 ### 컨테이너 중지
 ```bash
@@ -129,6 +138,66 @@ services:
 ```
 
 DOMAIN 설정이 없는 서비스(위의 redis)는 /etc/hosts에 추가되지 않습니다.
+
+## SSL 인증서
+
+### 자동 생성
+
+bootapp은 `SSL_DOMAINS`에 지정된 도메인에 대해 자체 서명 SSL 인증서를 자동 생성합니다:
+
+```yaml
+services:
+  app:
+    image: nginx
+    environment:
+      SSL_DOMAINS: myapp.test
+    volumes:
+      - ./var/certs:/etc/nginx/certs:ro
+```
+
+인증서 특징:
+- `./var/certs/` 디렉토리에 생성 (`.crt`, `.key`, `.pem` 파일)
+- 시스템 키체인(macOS) 또는 ca-certificates(Linux)에 자동 신뢰 등록
+- 10년 유효기간
+- 브라우저 호환을 위한 SAN (Subject Alternative Name) 포함
+
+### 인증서 파일
+
+```
+var/certs/
+├── myapp.test.crt    # 인증서
+├── myapp.test.key    # 개인 키
+└── myapp.test.pem    # 인증서 + 키 결합
+```
+
+### 강제 재생성
+
+인증서를 삭제하고 재생성하려면:
+
+```bash
+docker bootapp -f docker-compose.local.yml up -F
+```
+
+`-F` 플래그는:
+1. trust store에서 기존 인증서 제거
+2. 로컬 인증서 파일 삭제
+3. 새 인증서 생성
+4. trust store에 설치
+5. 컨테이너 강제 재생성
+
+### nginx 설정 예시
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name myapp.test;
+
+    ssl_certificate /etc/nginx/certs/myapp.test.crt;
+    ssl_certificate_key /etc/nginx/certs/myapp.test.key;
+
+    # ... 나머지 설정
+}
+```
 
 ## macOS 네트워킹
 
