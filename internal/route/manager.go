@@ -40,6 +40,15 @@ func SetupRoute(subnet string) error {
 	return SetupRouteWithTest(subnet, "")
 }
 
+// checkConnectivity tests if we can reach an IP
+func checkConnectivity(testIP string) bool {
+	if testIP == "" {
+		return false
+	}
+	cmd := exec.Command("ping", "-c", "1", "-t", "2", testIP)
+	return cmd.Run() == nil
+}
+
 // SetupRouteWithTest checks routing with optional connectivity test
 func SetupRouteWithTest(subnet, testIP string) error {
 	if IsLinux() {
@@ -54,13 +63,30 @@ func SetupRouteWithTest(subnet, testIP string) error {
 
 	// Check OrbStack (has native container IP access)
 	if CheckOrbStack() {
-		fmt.Println("✓ OrbStack detected, direct container access supported")
+		if testIP != "" && checkConnectivity(testIP) {
+			fmt.Println("✓ OrbStack: connected")
+			return nil
+		}
+		if testIP != "" {
+			fmt.Printf("⚠️  OrbStack detected but cannot reach %s\n", testIP)
+			return fmt.Errorf("OrbStack connectivity failed")
+		}
+		fmt.Println("✓ OrbStack detected")
 		return nil
 	}
 
 	// Docker Desktop requires docker-mac-net-connect
 	if CheckDockerMacNetConnect() {
-		fmt.Println("✓ docker-mac-net-connect detected, routes managed automatically")
+		if testIP != "" && checkConnectivity(testIP) {
+			fmt.Println("✓ docker-mac-net-connect: connected")
+			return nil
+		}
+		if testIP != "" {
+			fmt.Printf("⚠️  docker-mac-net-connect running but cannot reach %s\n", testIP)
+			fmt.Println("   Try: sudo brew services restart docker-mac-net-connect")
+			return fmt.Errorf("docker-mac-net-connect connectivity failed")
+		}
+		fmt.Println("✓ docker-mac-net-connect detected")
 		return nil
 	}
 
