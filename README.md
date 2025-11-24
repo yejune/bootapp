@@ -132,23 +132,33 @@ Services without DOMAIN config (like redis above) are not added to /etc/hosts.
 
 ## macOS Networking
 
-For direct container IP access on macOS:
+**docker-mac-net-connect is required** for direct container IP access on macOS.
 
-### Option 1: docker-mac-net-connect (Recommended)
+Docker Desktop runs containers inside a Linux VM, so macOS cannot directly access container IPs without a network tunnel.
+
+### Installation
 ```bash
 brew install chipmk/tap/docker-mac-net-connect
 sudo brew services start docker-mac-net-connect
 ```
 
-### Option 2: Automatic Route
-If no working route exists, bootapp will automatically:
-1. Check if route already exists and test connectivity
-2. If not working, add route through Docker VM gateway
-3. Skip if connectivity is already working
+bootapp will check for docker-mac-net-connect and show installation instructions if not found.
 
 ## Linux
 
 No additional setup needed - Docker networking works natively.
+
+## Domain TLD Recommendations
+
+**Recommended TLDs:**
+- `.test` - RFC 2606 reserved for testing ✅
+- `.localhost` - Local only ✅
+- `.internal` - Private networks ✅
+
+**Avoid:**
+- `.local` - Conflicts with macOS mDNS (slow DNS lookups)
+- `.dev` - Google-owned, forces HTTPS
+- `.app` - Google-owned, forces HTTPS
 
 ## Configuration
 

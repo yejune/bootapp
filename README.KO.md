@@ -132,23 +132,33 @@ DOMAIN 설정이 없는 서비스(위의 redis)는 /etc/hosts에 추가되지 �
 
 ## macOS 네트워킹
 
-macOS에서 컨테이너 IP에 직접 접근하려면:
+macOS에서 컨테이너 IP에 직접 접근하려면 **docker-mac-net-connect가 필수**입니다.
 
-### 방법 1: docker-mac-net-connect (권장)
+Docker Desktop은 Linux VM 안에서 컨테이너를 실행하므로, 네트워크 터널 없이는 macOS에서 컨테이너 IP에 직접 접근할 수 없습니다.
+
+### 설치
 ```bash
 brew install chipmk/tap/docker-mac-net-connect
 sudo brew services start docker-mac-net-connect
 ```
 
-### 방법 2: 자동 라우트
-작동하는 라우트가 없으면 bootapp이 자동으로:
-1. 라우트 존재 여부 확인 및 연결 테스트
-2. 작동하지 않으면 Docker VM 게이트웨이를 통한 라우트 추가
-3. 이미 연결이 되면 건너뜀
+bootapp은 docker-mac-net-connect를 확인하고, 없으면 설치 안내를 표시합니다.
 
 ## Linux
 
 추가 설정 불필요 - Docker 네트워킹이 기본적으로 작동합니다.
+
+## 도메인 TLD 권장사항
+
+**권장 TLD:**
+- `.test` - RFC 2606 테스트용 예약 ✅
+- `.localhost` - 로컬 전용 ✅
+- `.internal` - 사설 네트워크용 ✅
+
+**피해야 할 TLD:**
+- `.local` - macOS mDNS와 충돌 (DNS 조회 느림)
+- `.dev` - Google 소유, HTTPS 강제
+- `.app` - Google 소유, HTTPS 강제
 
 ## 설정 파일
 
