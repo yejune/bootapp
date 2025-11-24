@@ -45,27 +45,67 @@ type IPAMPoolConfig struct {
 }
 
 // FindComposeFile finds the docker-compose file in the current directory
+// Returns error if no file found, or multiple files found (use FindComposeFiles for selection)
 func FindComposeFile() (string, error) {
+	files, err := FindComposeFiles()
+	if err != nil {
+		return "", err
+	}
+
+	if len(files) == 0 {
+		cwd, _ := os.Getwd()
+		return "", fmt.Errorf("no docker-compose file found in %s", cwd)
+	}
+
+	if len(files) == 1 {
+		return files[0], nil
+	}
+
+	return "", &MultipleFilesError{Files: files}
+}
+
+// MultipleFilesError is returned when multiple compose files are found
+type MultipleFilesError struct {
+	Files []string
+}
+
+func (e *MultipleFilesError) Error() string {
+	return fmt.Sprintf("multiple compose files found: %v", e.Files)
+}
+
+// FindComposeFiles returns all compose files in the current directory
+func FindComposeFiles() ([]string, error) {
 	candidates := []string{
 		"docker-compose.yml",
 		"docker-compose.yaml",
+		"docker-compose.*.yml",
+		"docker-compose.*.yaml",
 		"compose.yml",
 		"compose.yaml",
 	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	for _, name := range candidates {
-		path := filepath.Join(cwd, name)
-		if _, err := os.Stat(path); err == nil {
-			return path, nil
+	var found []string
+	seen := make(map[string]bool)
+
+	for _, pattern := range candidates {
+		matches, err := filepath.Glob(filepath.Join(cwd, pattern))
+		if err != nil {
+			continue
+		}
+		for _, match := range matches {
+			if !seen[match] {
+				seen[match] = true
+				found = append(found, match)
+			}
 		}
 	}
 
-	return "", fmt.Errorf("no docker-compose file found in %s", cwd)
+	return found, nil
 }
 
 // ParseComposeFile parses a docker-compose file

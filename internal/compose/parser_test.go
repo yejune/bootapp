@@ -439,6 +439,79 @@ func TestExtractServiceDomains(t *testing.T) {
 	}
 }
 
+func TestFindComposeFiles(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "compose-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current dir: %v", err)
+	}
+	defer os.Chdir(originalWd)
+
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change dir: %v", err)
+	}
+
+	// Create multiple compose files
+	files := []string{"docker-compose.yml", "docker-compose.local.yml", "docker-compose.prod.yml"}
+	for _, f := range files {
+		if err := os.WriteFile(f, []byte("version: '3'"), 0644); err != nil {
+			t.Fatalf("Failed to write file: %v", err)
+		}
+	}
+
+	found, err := FindComposeFiles()
+	if err != nil {
+		t.Fatalf("FindComposeFiles() error = %v", err)
+	}
+
+	if len(found) != 3 {
+		t.Errorf("FindComposeFiles() found %d files, want 3", len(found))
+	}
+}
+
+func TestFindComposeFile_MultipleError(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "compose-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current dir: %v", err)
+	}
+	defer os.Chdir(originalWd)
+
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change dir: %v", err)
+	}
+
+	// Create multiple compose files
+	os.WriteFile("docker-compose.yml", []byte("version: '3'"), 0644)
+	os.WriteFile("docker-compose.local.yml", []byte("version: '3'"), 0644)
+
+	_, err = FindComposeFile()
+	if err == nil {
+		t.Error("FindComposeFile() should return error for multiple files")
+		return
+	}
+
+	multiErr, ok := err.(*MultipleFilesError)
+	if !ok {
+		t.Errorf("Expected MultipleFilesError, got %T", err)
+		return
+	}
+
+	if len(multiErr.Files) != 2 {
+		t.Errorf("MultipleFilesError.Files has %d files, want 2", len(multiErr.Files))
+	}
+}
+
 func TestFindComposeFile(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "compose-test-*")
 	if err != nil {

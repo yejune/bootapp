@@ -58,7 +58,15 @@ func runUp(cmd *cobra.Command, args []string) error {
 		// Auto-detect
 		composePath, err = compose.FindComposeFile()
 		if err != nil {
-			return err
+			// Check if multiple files found
+			if multiErr, ok := err.(*compose.MultipleFilesError); ok {
+				composePath, err = selectComposeFile(multiErr.Files)
+				if err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
 		}
 	}
 
@@ -433,4 +441,25 @@ func validateSudo() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// selectComposeFile prompts user to select from multiple compose files
+func selectComposeFile(files []string) (string, error) {
+	fmt.Println("Multiple compose files found:")
+	for i, f := range files {
+		fmt.Printf("  [%d] %s\n", i+1, filepath.Base(f))
+	}
+	fmt.Print("\nSelect file (1-", len(files), "): ")
+
+	var selection int
+	_, err := fmt.Scanln(&selection)
+	if err != nil {
+		return "", fmt.Errorf("invalid selection: %w", err)
+	}
+
+	if selection < 1 || selection > len(files) {
+		return "", fmt.Errorf("selection out of range: %d", selection)
+	}
+
+	return files[selection-1], nil
 }

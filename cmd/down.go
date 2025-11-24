@@ -56,7 +56,15 @@ func runDown(cmd *cobra.Command, args []string) error {
 		// Auto-detect
 		composePath, err = compose.FindComposeFile()
 		if err != nil {
-			return err
+			// Check if multiple files found
+			if multiErr, ok := err.(*compose.MultipleFilesError); ok {
+				composePath, err = selectComposeFile(multiErr.Files)
+				if err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
 		}
 	}
 
