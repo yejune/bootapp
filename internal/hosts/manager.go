@@ -13,7 +13,7 @@ import (
 const hostsFile = "/etc/hosts"
 const marker = "## docker-bootapp"
 
-// AddEntries adds multiple entries to /etc/hosts
+// AddEntries adds multiple entries to /etc/hosts (requires root)
 // Each container can have multiple domains
 func AddEntries(containers map[string]network.ContainerInfo, projectName string) error {
 	// Remove existing entries for this project first
@@ -43,16 +43,15 @@ func AddEntries(containers map[string]network.ContainerInfo, projectName string)
 	// Join all entries with newlines
 	content := strings.Join(entries, "\n")
 
-	// Use sudo to append all entries at once
+	// Append all entries at once (requires root)
 	cmd := exec.Command("sudo", "sh", "-c", fmt.Sprintf("echo '%s' >> %s", content, hostsFile))
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
 }
 
-// AddEntry adds an entry to /etc/hosts
+// AddEntry adds an entry to /etc/hosts (requires root)
 func AddEntry(ip, domain, projectName string) error {
 	// Check if entry already exists
 	if exists, _ := EntryExists(domain); exists {
@@ -64,16 +63,15 @@ func AddEntry(ip, domain, projectName string) error {
 
 	entry := fmt.Sprintf("%s\t%s\t%s:%s", ip, domain, marker, projectName)
 
-	// Use sudo to append to /etc/hosts
+	// Append to /etc/hosts (requires root)
 	cmd := exec.Command("sudo", "sh", "-c", fmt.Sprintf("echo '%s' >> %s", entry, hostsFile))
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
 }
 
-// RemoveEntry removes entries for a domain or project from /etc/hosts
+// RemoveEntry removes entries for a domain or project from /etc/hosts (requires root)
 func RemoveEntry(domain, projectName string) error {
 	// Use sed to remove lines matching the domain or project marker
 	var pattern string
@@ -84,19 +82,17 @@ func RemoveEntry(domain, projectName string) error {
 	}
 
 	cmd := exec.Command("sudo", "sed", "-i", "", pattern, hostsFile)
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
 }
 
-// RemoveProjectEntries removes all entries for a project
+// RemoveProjectEntries removes all entries for a project (requires root)
 func RemoveProjectEntries(projectName string) error {
 	pattern := fmt.Sprintf("/%s:%s/d", marker, projectName)
 
 	cmd := exec.Command("sudo", "sed", "-i", "", pattern, hostsFile)
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

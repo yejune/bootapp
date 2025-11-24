@@ -269,6 +269,43 @@ func uniqueDomains(domains []string) []string {
 	return result
 }
 
+// ExtractSSLDomains extracts only SSL_DOMAINS from compose file
+// Returns all unique SSL domains that need certificates
+func ExtractSSLDomains(compose *ComposeFile) []string {
+	var allDomains []string
+
+	for _, service := range compose.Services {
+		domains := extractSSLDomainsFromEnvironment(service.Environment)
+		allDomains = append(allDomains, domains...)
+	}
+
+	return uniqueDomains(allDomains)
+}
+
+// extractSSLDomainsFromEnvironment extracts only SSL_DOMAINS from environment
+func extractSSLDomainsFromEnvironment(env interface{}) []string {
+	var domains []string
+
+	switch e := env.(type) {
+	case []interface{}:
+		for _, item := range e {
+			if str, ok := item.(string); ok {
+				prefix := "SSL_DOMAINS="
+				if strings.HasPrefix(str, prefix) {
+					value := strings.TrimPrefix(str, prefix)
+					domains = append(domains, splitDomains(value)...)
+				}
+			}
+		}
+	case map[string]interface{}:
+		if value, ok := e["SSL_DOMAINS"].(string); ok {
+			domains = append(domains, splitDomains(value)...)
+		}
+	}
+
+	return domains
+}
+
 func extractDomainsFromLabels(labels interface{}) []string {
 	var domains []string
 

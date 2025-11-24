@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/yejune/docker-bootapp/internal/cert"
 	"github.com/yejune/docker-bootapp/internal/compose"
 	"github.com/yejune/docker-bootapp/internal/hosts"
 	"github.com/yejune/docker-bootapp/internal/network"
@@ -16,9 +17,10 @@ import (
 )
 
 var (
-	noBuild bool
-	pull    bool
-	detach  bool
+	noBuild       bool
+	pull          bool
+	detach        bool
+	forceRecreate bool
 )
 
 var upCmd = &cobra.Command{
@@ -37,10 +39,16 @@ func init() {
 	upCmd.Flags().BoolVar(&noBuild, "no-build", false, "Don't build images")
 	upCmd.Flags().BoolVar(&pull, "pull", false, "Pull images before starting")
 	upCmd.Flags().BoolVarP(&detach, "detach", "d", true, "Run containers in background")
+	upCmd.Flags().BoolVarP(&forceRecreate, "force-recreate", "F", false, "Force recreate containers")
 	rootCmd.AddCommand(upCmd)
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
+	// Validate sudo credentials upfront (required for /etc/hosts and cert trust)
+	if err := ValidateSudo(); err != nil {
+		return fmt.Errorf("sudo authentication failed: %w", err)
+	}
+
 	// Find or use specified docker-compose file
 	var composePath string
 	var err error
@@ -104,6 +112,55 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Generate SSL certificates for SSL_DOMAINS only
+	certDir := filepath.Join(projectPath, "var", "certs")
+	var certsToTrust []string
+	certsGenerated := false
+	sslDomains := compose.ExtractSSLDomains(composeData)
+	if len(sslDomains) > 0 {
+		fmt.Println("\nSetting up SSL certificates...")
+
+		// If force-recreate, delete existing certs and remove trust first
+		if forceRecreate {
+			fmt.Println("Force recreate: removing existing certificates...")
+			for _, domain := range sslDomains {
+				if cert.CertExists(domain, certDir) {
+					// Remove from trust store first
+					if err := cert.UninstallFromTrustStore(domain); err != nil {
+						fmt.Printf("  ⚠️  %s: failed to untrust\n", domain)
+					} else {
+						fmt.Printf("  ✓ %s: untrusted\n", domain)
+					}
+					// Delete local cert files
+					if err := cert.RemoveCert(domain, certDir); err != nil {
+						fmt.Printf("  ⚠️  %s: failed to remove\n", domain)
+					} else {
+						fmt.Printf("  ✓ %s: removed\n", domain)
+					}
+				}
+			}
+		}
+
+		info := cert.DefaultCertInfo()
+		for _, domain := range sslDomains {
+			// Generate if not exists
+			if !cert.CertExists(domain, certDir) {
+				if err := cert.GenerateCert(domain, certDir, info); err != nil {
+					fmt.Printf("  ⚠️  %s: failed to generate\n", domain)
+					continue
+				}
+				fmt.Printf("  ✓ %s: generated\n", domain)
+				certsGenerated = true
+			}
+			// Collect certs that need trust
+			if !cert.IsTrusted(domain) {
+				certsToTrust = append(certsToTrust, domain)
+			} else {
+				fmt.Printf("  ✓ %s: trusted\n", domain)
+			}
+		}
+	}
+
 	// Initialize project manager
 	projectMgr, err := network.NewProjectManager()
 	if err != nil {
@@ -117,15 +174,19 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Subnet: %s\n", projectInfo.Subnet)
 
-	// Validate sudo credentials upfront (needed for /etc/hosts)
-	fmt.Println("\nValidating sudo credentials...")
-	if err := validateSudo(); err != nil {
-		return fmt.Errorf("sudo authentication required: %w", err)
+	// Install certificates to trust store
+	if len(certsToTrust) > 0 {
+		fmt.Println("\nInstalling certificates to system trust store...")
+		for _, domain := range certsToTrust {
+			if err := cert.InstallToTrustStore(domain, certDir); err != nil {
+				fmt.Printf("  ⚠️  %s: failed to trust\n", domain)
+			}
+		}
 	}
 
-	// Run docker-compose up
+	// Run docker-compose up (force recreate if certs were newly generated or --force-recreate)
 	fmt.Println("\nStarting containers...")
-	if err := runDockerCompose(composePath, projectName); err != nil {
+	if err := runDockerCompose(composePath, projectName, forceRecreate || certsGenerated); err != nil {
 		return err
 	}
 
@@ -233,7 +294,7 @@ func createDockerNetwork(name, subnet string) error {
 	return cmd.Run()
 }
 
-func runDockerCompose(composePath, projectName string) error {
+func runDockerCompose(composePath, projectName string, forceRecreate bool) error {
 	// Use "docker compose" (V2) instead of "docker-compose"
 	args := []string{"compose", "-f", composePath, "-p", projectName, "up"}
 
@@ -245,6 +306,9 @@ func runDockerCompose(composePath, projectName string) error {
 	}
 	if pull {
 		args = append(args, "--pull", "always")
+	}
+	if forceRecreate {
+		args = append(args, "--force-recreate")
 	}
 
 	cmd := exec.Command("docker", args...)
@@ -440,16 +504,6 @@ func getContainerIPsJSON(projectName string) (map[string]string, error) {
 	return containers, nil
 }
 
-// validateSudo prompts for sudo password and caches credentials
-func validateSudo() error {
-	// sudo -v prompts for password if needed and extends the timeout
-	cmd := exec.Command("sudo", "-v")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
 // selectComposeFile prompts user to select from multiple compose files
 func selectComposeFile(files []string) (string, error) {
 	fmt.Println("Multiple compose files found:")
@@ -469,4 +523,20 @@ func selectComposeFile(files []string) (string, error) {
 	}
 
 	return files[selection-1], nil
+}
+
+// collectAllDomains collects all unique domains from serviceDomains map
+func collectAllDomains(serviceDomains map[string][]string) []string {
+	domainSet := make(map[string]bool)
+	for _, domains := range serviceDomains {
+		for _, d := range domains {
+			domainSet[d] = true
+		}
+	}
+
+	var result []string
+	for d := range domainSet {
+		result = append(result, d)
+	}
+	return result
 }

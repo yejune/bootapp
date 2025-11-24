@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -58,4 +59,15 @@ func Execute() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+// ValidateSudo prompts for sudo password and caches credentials
+func ValidateSudo() error {
+	fmt.Println("Checking sudo credentials...")
+	// sudo -v prompts for password if needed and extends the timeout
+	cmd := exec.Command("sudo", "-v")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

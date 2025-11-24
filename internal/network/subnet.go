@@ -61,9 +61,17 @@ func NewProjectManager() (*ProjectManager, error) {
 func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string) (*ProjectInfo, error) {
 	// Check if project exists
 	if info, ok := m.projects[projectName]; ok {
-		// Update path if changed
+		// Update path and domain if changed
+		needSave := false
 		if info.Path != projectPath {
 			info.Path = projectPath
+			needSave = true
+		}
+		if info.Domain != domain {
+			info.Domain = domain
+			needSave = true
+		}
+		if needSave {
 			m.projects[projectName] = info
 			m.saveGlobal()
 		}

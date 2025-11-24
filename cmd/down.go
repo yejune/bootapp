@@ -39,6 +39,15 @@ func init() {
 }
 
 func runDown(cmd *cobra.Command, args []string) error {
+	// Validate sudo credentials upfront (required for /etc/hosts modification)
+	if !keepHosts {
+		if err := ValidateSudo(); err != nil {
+			fmt.Println("\nOr use --keep-hosts to skip /etc/hosts modification:")
+			fmt.Println("   docker bootapp down --keep-hosts")
+			return fmt.Errorf("sudo authentication failed: %w", err)
+		}
+	}
+
 	// Find or use specified docker-compose file
 	var composePath string
 	var err error
