@@ -1,5 +1,7 @@
 # Build output
 build/
+docker-bootapp
+release.tar.gz
 
 # Go
 *.exe

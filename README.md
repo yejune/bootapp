@@ -10,12 +10,41 @@ Automatically manages:
 
 ## Installation
 
-### Quick Install
+### Method 1: Using Homebrew (Easiest, Recommended)
+
+macOS or Linux:
 ```bash
-make build install
+brew install yejune/tap/docker-bootapp
 ```
 
-### Manual Install
+Homebrew automatically:
+- Downloads and builds the latest version
+- Installs as Docker CLI plugin
+- Checks dependencies
+
+### Method 2: Using go install
+```bash
+go install github.com/yejune/docker-bootapp@latest
+docker-bootapp install
+```
+
+Or build locally and install:
+```bash
+go build
+./docker-bootapp install
+```
+
+The `docker-bootapp install` command automatically:
+- Copies the binary to Docker CLI plugins directory (`~/.docker/cli-plugins/`)
+- Sets executable permissions
+- Checks for docker-mac-net-connect dependency on macOS
+
+### Method 3: Using install script
+```bash
+./install.sh
+```
+
+### Method 4: Manual installation
 ```bash
 make build
 cp build/docker-bootapp ~/.docker/cli-plugins/docker-bootapp

@@ -24,9 +24,10 @@ type ContainerInfo struct {
 
 // ProjectInfo stores global project information
 type ProjectInfo struct {
-	Path   string `json:"path"`
-	Subnet string `json:"subnet"`
-	Domain string `json:"domain"`
+	Path       string   `json:"path"`
+	Subnet     string   `json:"subnet"`
+	Domain     string   `json:"domain"`
+	SSLDomains []string `json:"ssl_domains,omitempty"`
 }
 
 // ProjectManager manages project configurations
@@ -57,11 +58,34 @@ func NewProjectManager() (*ProjectManager, error) {
 	return mgr, nil
 }
 
+// ProjectChanges captures what changed between previous and current config
+type ProjectChanges struct {
+	PreviousDomain     string
+	PreviousSSLDomains []string
+	DomainChanged      bool
+	RemovedSSLDomains  []string
+}
+
 // GetOrCreateProject returns existing project or creates a new one
-func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string) (*ProjectInfo, error) {
+// Also returns changes detected from previous config
+func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string, sslDomains []string) (*ProjectInfo, *ProjectChanges, error) {
+	changes := &ProjectChanges{}
+
 	// Check if project exists
 	if info, ok := m.projects[projectName]; ok {
-		// Update path and domain if changed
+		// Capture previous values for change detection
+		changes.PreviousDomain = info.Domain
+		changes.PreviousSSLDomains = info.SSLDomains
+
+		// Check domain change
+		if info.Domain != domain {
+			changes.DomainChanged = true
+		}
+
+		// Find removed SSL domains
+		changes.RemovedSSLDomains = findRemovedDomains(info.SSLDomains, sslDomains)
+
+		// Update all fields
 		needSave := false
 		if info.Path != projectPath {
 			info.Path = projectPath
@@ -71,33 +95,67 @@ func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain str
 			info.Domain = domain
 			needSave = true
 		}
+		if !slicesEqual(info.SSLDomains, sslDomains) {
+			info.SSLDomains = sslDomains
+			needSave = true
+		}
 		if needSave {
 			m.projects[projectName] = info
 			m.saveGlobal()
 		}
-		return &info, nil
+		return &info, changes, nil
 	}
 
 	// Allocate new subnet
 	subnet, err := m.allocateSubnet()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create project info
 	info := ProjectInfo{
-		Path:   projectPath,
-		Subnet: subnet,
-		Domain: domain,
+		Path:       projectPath,
+		Subnet:     subnet,
+		Domain:     domain,
+		SSLDomains: sslDomains,
 	}
 	m.projects[projectName] = info
 
 	// Save global config
 	if err := m.saveGlobal(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &info, nil
+	return &info, changes, nil
+}
+
+// findRemovedDomains returns domains that were in old but not in new
+func findRemovedDomains(old, new []string) []string {
+	newSet := make(map[string]bool)
+	for _, d := range new {
+		newSet[d] = true
+	}
+
+	var removed []string
+	for _, d := range old {
+		if !newSet[d] {
+			removed = append(removed, d)
+		}
+	}
+	return removed
+}
+
+// slicesEqual checks if two string slices are equal
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // GetProject returns project info

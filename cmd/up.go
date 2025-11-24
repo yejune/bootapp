@@ -168,11 +168,44 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get or create project configuration (allocates unique subnet)
-	projectInfo, err := projectMgr.GetOrCreateProject(projectName, projectPath, baseDomain)
+	// Pass sslDomains to track changes
+	projectInfo, changes, err := projectMgr.GetOrCreateProject(projectName, projectPath, baseDomain, sslDomains)
 	if err != nil {
 		return fmt.Errorf("failed to setup project: %w", err)
 	}
 	fmt.Printf("Subnet: %s\n", projectInfo.Subnet)
+
+	// Clean up removed SSL domains (certs + trust)
+	if len(changes.RemovedSSLDomains) > 0 {
+		fmt.Println("\nCleaning up removed SSL domains...")
+		for _, domain := range changes.RemovedSSLDomains {
+			// Remove from trust store
+			if err := cert.UninstallFromTrustStore(domain); err != nil {
+				fmt.Printf("  ⚠️  %s: failed to untrust\n", domain)
+			} else {
+				fmt.Printf("  ✓ %s: untrusted\n", domain)
+			}
+			// Delete local cert files
+			if cert.CertExists(domain, certDir) {
+				if err := cert.RemoveCert(domain, certDir); err != nil {
+					fmt.Printf("  ⚠️  %s: failed to remove cert\n", domain)
+				} else {
+					fmt.Printf("  ✓ %s: cert removed\n", domain)
+				}
+			}
+		}
+	}
+
+	// Clean up old hosts entries if domain changed
+	if changes.DomainChanged && changes.PreviousDomain != "" {
+		fmt.Printf("\nDomain changed: %s → %s\n", changes.PreviousDomain, baseDomain)
+		fmt.Println("Cleaning up old /etc/hosts entries...")
+		if err := hosts.RemoveProjectEntries(projectName); err != nil {
+			fmt.Printf("  ⚠️  Failed to remove old hosts entries: %v\n", err)
+		} else {
+			fmt.Println("  ✓ Old hosts entries removed")
+		}
+	}
 
 	// Install certificates to trust store
 	if len(certsToTrust) > 0 {

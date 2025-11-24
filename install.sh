@@ -1,0 +1,98 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Detect OS
+OS="$(uname -s)"
+case "$OS" in
+    Linux*)     OS_TYPE=linux;;
+    Darwin*)    OS_TYPE=macos;;
+    *)          OS_TYPE="unknown";;
+esac
+
+echo "🚀 Installing docker-bootapp..."
+echo ""
+
+# Check if Go is installed
+if ! command -v go &> /dev/null; then
+    echo -e "${RED}Error: Go is not installed${NC}"
+    echo "Please install Go from https://golang.org/dl/"
+    exit 1
+fi
+
+echo "✓ Go found: $(go version)"
+
+# Build the binary
+echo "📦 Building docker-bootapp..."
+go build -o build/docker-bootapp .
+
+if [ ! -f "build/docker-bootapp" ]; then
+    echo -e "${RED}Error: Build failed${NC}"
+    exit 1
+fi
+
+echo "✓ Build successful"
+
+# Create Docker CLI plugins directory
+PLUGIN_DIR="$HOME/.docker/cli-plugins"
+mkdir -p "$PLUGIN_DIR"
+
+# Copy binary to Docker CLI plugins directory
+echo "📋 Installing to $PLUGIN_DIR..."
+cp build/docker-bootapp "$PLUGIN_DIR/docker-bootapp"
+chmod +x "$PLUGIN_DIR/docker-bootapp"
+
+echo -e "${GREEN}✓ docker-bootapp installed successfully!${NC}"
+echo ""
+
+# Verify installation
+if docker bootapp --version &> /dev/null; then
+    echo "✓ Verified: $(docker bootapp --version)"
+else
+    echo -e "${YELLOW}Warning: Unable to verify installation${NC}"
+fi
+
+# macOS specific checks
+if [ "$OS_TYPE" = "macos" ]; then
+    echo ""
+    echo "🍎 macOS detected - checking dependencies..."
+
+    if ! command -v docker-mac-net-connect &> /dev/null; then
+        echo -e "${YELLOW}⚠️  docker-mac-net-connect is NOT installed${NC}"
+        echo ""
+        echo "On macOS, docker-mac-net-connect is required to access container IPs directly."
+        echo ""
+        echo "Install with:"
+        echo "  brew install chipmk/tap/docker-mac-net-connect"
+        echo "  sudo brew services start docker-mac-net-connect"
+        echo ""
+    else
+        echo "✓ docker-mac-net-connect is installed"
+
+        # Check if service is running
+        if brew services list | grep -q "docker-mac-net-connect.*started"; then
+            echo "✓ docker-mac-net-connect service is running"
+        else
+            echo -e "${YELLOW}⚠️  docker-mac-net-connect is installed but not running${NC}"
+            echo ""
+            echo "Start the service with:"
+            echo "  sudo brew services start docker-mac-net-connect"
+            echo ""
+        fi
+    fi
+fi
+
+echo ""
+echo -e "${GREEN}🎉 Installation complete!${NC}"
+echo ""
+echo "Usage:"
+echo "  docker bootapp up      # Start containers with auto-networking"
+echo "  docker bootapp down    # Stop containers"
+echo "  docker bootapp ls      # List managed projects"
+echo ""
+echo "For more information, see README.md"

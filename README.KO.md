@@ -10,12 +10,41 @@
 
 ## 설치
 
-### 빠른 설치
+### 방법 1: Homebrew 사용 (가장 간단, 권장)
+
+macOS 또는 Linux:
 ```bash
-make build install
+brew install yejune/tap/docker-bootapp
 ```
 
-### 수동 설치
+Homebrew가 자동으로:
+- 최신 버전 다운로드 및 빌드
+- Docker CLI 플러그인으로 설치
+- 의존성 확인
+
+### 방법 2: go install 사용
+```bash
+go install github.com/yejune/docker-bootapp@latest
+docker-bootapp install
+```
+
+또는 로컬에서 빌드 후:
+```bash
+go build
+./docker-bootapp install
+```
+
+`docker-bootapp install` 명령어가 자동으로:
+- Docker CLI 플러그인 디렉토리(`~/.docker/cli-plugins/`)에 바이너리 복사
+- 실행 권한 설정
+- macOS에서 docker-mac-net-connect 의존성 확인
+
+### 방법 3: 설치 스크립트 사용
+```bash
+./install.sh
+```
+
+### 방법 4: 수동 설치
 ```bash
 make build
 cp build/docker-bootapp ~/.docker/cli-plugins/docker-bootapp
