@@ -600,6 +600,56 @@ func TestExtractServiceDomains_WithTraefik(t *testing.T) {
 	}
 }
 
+func TestValidateForBootapp_Valid(t *testing.T) {
+	compose := &ComposeFile{
+		Services: map[string]Service{
+			"app": {Image: "nginx"},
+			"db":  {Image: "mysql"},
+		},
+	}
+
+	err := ValidateForBootapp(compose)
+	if err != nil {
+		t.Errorf("ValidateForBootapp() error = %v, want nil", err)
+	}
+}
+
+func TestValidateForBootapp_CustomNetworks(t *testing.T) {
+	compose := &ComposeFile{
+		Services: map[string]Service{
+			"app": {Image: "nginx"},
+		},
+		Networks: map[string]Network{
+			"custom": {Driver: "bridge"},
+		},
+	}
+
+	err := ValidateForBootapp(compose)
+	if err == nil {
+		t.Error("ValidateForBootapp() should return error for custom networks")
+	}
+}
+
+func TestValidateForBootapp_StaticIP(t *testing.T) {
+	compose := &ComposeFile{
+		Services: map[string]Service{
+			"app": {
+				Image: "nginx",
+				Networks: map[string]interface{}{
+					"default": map[string]interface{}{
+						"ipv4_address": "172.18.0.100",
+					},
+				},
+			},
+		},
+	}
+
+	err := ValidateForBootapp(compose)
+	if err == nil {
+		t.Error("ValidateForBootapp() should return error for static IP")
+	}
+}
+
 func TestExtractServiceDomains_MixedEnvAndLabels(t *testing.T) {
 	compose := &ComposeFile{
 		Services: map[string]Service{

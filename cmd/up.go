@@ -78,6 +78,13 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse compose file: %w", err)
 	}
 
+	// Validate compose file for bootapp compatibility
+	if err := compose.ValidateForBootapp(composeData); err != nil {
+		return fmt.Errorf("%s\n\n"+
+			"docker-bootapp manages networks automatically and is intended for local development.\n"+
+			"Please remove network configurations from your compose file, or use 'docker compose' directly.", err)
+	}
+
 	// Get project info
 	projectPath := filepath.Dir(composePath)
 	projectName := compose.GetProjectName(composePath)

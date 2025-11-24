@@ -129,6 +129,36 @@ func GetProjectName(composePath string) string {
 	return filepath.Base(dir)
 }
 
+// ValidateForBootapp checks if compose file is compatible with bootapp
+// Returns error if custom networks or IP assignments are found
+func ValidateForBootapp(compose *ComposeFile) error {
+	// Check for top-level networks definition
+	if len(compose.Networks) > 0 {
+		return fmt.Errorf("custom 'networks:' section detected")
+	}
+
+	// Check for service-level network config with IP
+	for serviceName, service := range compose.Services {
+		if service.Networks != nil {
+			// Check if it's a map with ipv4_address
+			if netMap, ok := service.Networks.(map[string]interface{}); ok {
+				for netName, netConfig := range netMap {
+					if configMap, ok := netConfig.(map[string]interface{}); ok {
+						if _, hasIP := configMap["ipv4_address"]; hasIP {
+							return fmt.Errorf("service '%s' has static IP in network '%s'", serviceName, netName)
+						}
+						if _, hasIP := configMap["ipv6_address"]; hasIP {
+							return fmt.Errorf("service '%s' has static IP in network '%s'", serviceName, netName)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // ExtractDomain extracts the first domain from compose file (for backward compatibility)
 func ExtractDomain(compose *ComposeFile) string {
 	domains := ExtractDomains(compose)
