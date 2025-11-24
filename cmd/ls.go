@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -46,16 +45,6 @@ func runLs(cmd *cobra.Command, args []string) error {
 		fmt.Printf("   Path:   %s\n", info.Path)
 		fmt.Printf("   Subnet: %s\n", info.Subnet)
 		fmt.Printf("   Domain: %s\n", info.Domain)
-
-		// Try to load local config for container details
-		localConfig, err := projectMgr.GetLocalConfig(info.Path)
-		if err == nil && len(localConfig.Containers) > 0 {
-			fmt.Println("   Containers:")
-			for containerName, containerInfo := range localConfig.Containers {
-				domains := strings.Join(containerInfo.Domains, ", ")
-				fmt.Printf("     - %s: %s -> %s\n", containerName, domains, containerInfo.IP)
-			}
-		}
 	}
 
 	fmt.Println()
@@ -72,10 +61,7 @@ func runLs(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("📁 Config files:")
-	homeDir, _ := os.UserHomeDir()
-	fmt.Printf("   Global: %s/.docker-bootapp/projects.json\n", homeDir)
-	fmt.Println("   Local:  {project}/.docker/network.json")
+	fmt.Println("📁 Config: ~/.docker-bootapp/projects.json")
 
 	return nil
 }

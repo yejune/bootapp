@@ -89,6 +89,19 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Initialize project manager
+	projectMgr, err := network.NewProjectManager()
+	if err != nil {
+		return fmt.Errorf("failed to initialize project manager: %w", err)
+	}
+
+	// Get or create project configuration (allocates unique subnet)
+	projectInfo, err := projectMgr.GetOrCreateProject(projectName, projectPath, baseDomain)
+	if err != nil {
+		return fmt.Errorf("failed to setup project: %w", err)
+	}
+	fmt.Printf("Subnet: %s\n", projectInfo.Subnet)
+
 	// Validate sudo credentials upfront (needed for /etc/hosts)
 	fmt.Println("\nValidating sudo credentials...")
 	if err := validateSudo(); err != nil {
@@ -115,16 +128,6 @@ func runUp(cmd *cobra.Command, args []string) error {
 	// Build container info with domains (only for services with domain config)
 	containers := buildContainerInfo(containerIPs, serviceDomains)
 
-	// Save local config
-	localConfig := network.LocalConfig{
-		Project:    projectName,
-		Subnet:     networkSubnet,
-		Containers: containers,
-	}
-	if err := network.SaveLocalConfig(projectPath, &localConfig); err != nil {
-		fmt.Printf("Warning: Could not save config: %v\n", err)
-	}
-
 	// Print container info
 	fmt.Println("\nContainers:")
 	for name, info := range containers {
@@ -141,25 +144,22 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to update /etc/hosts: %w", err)
 	}
 
-	// Setup routing (macOS only) - use actual network subnet
-	if networkSubnet != "" {
-		fmt.Println("\nSetting up routing...")
-		// Get first container IP for connectivity test
-		var testIP string
-		for _, info := range containers {
-			if info.IP != "" {
-				testIP = info.IP
-				break
-			}
-		}
-		if err := route.SetupRouteWithTest(networkSubnet, testIP); err != nil {
-			fmt.Printf("Warning: Route setup failed: %v\n", err)
+	// Setup routing (macOS only) - use subnet from global config
+	fmt.Println("\nSetting up routing...")
+	// Get first container IP for connectivity test
+	var testIP string
+	for _, info := range containers {
+		if info.IP != "" {
+			testIP = info.IP
+			break
 		}
 	}
+	if err := route.SetupRouteWithTest(projectInfo.Subnet, testIP); err != nil {
+		fmt.Printf("Warning: Route setup failed: %v\n", err)
+	}
 
-	// Print config file locations
-	fmt.Println("\n📁 Configuration files:")
-	fmt.Printf("  Local:  %s/.docker/network.json\n", projectPath)
+	// Print config file location
+	fmt.Println("\n📁 Configuration: ~/.docker-bootapp/projects.json")
 
 	// Get main app domain
 	appDomain := baseDomain

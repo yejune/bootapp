@@ -26,7 +26,7 @@ var downCmd = &cobra.Command{
 	Long: `Stop containers using docker-compose and optionally:
 - Remove /etc/hosts entries
 - Remove routing (macOS only)
-- Remove .docker/network.json`,
+- Remove project from global config`,
 	RunE: runDown,
 }
 
@@ -63,12 +63,17 @@ func runDown(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Using compose file: %s\n", composePath)
 
 	// Get project info
-	projectPath := filepath.Dir(composePath)
 	projectName := compose.GetProjectName(composePath)
 	fmt.Printf("Project: %s\n", projectName)
 
-	// Load local config for subnet info
-	localConfig, _ := network.LoadLocalConfig(projectPath)
+	// Initialize project manager
+	projectMgr, err := network.NewProjectManager()
+	if err != nil {
+		return fmt.Errorf("failed to initialize project manager: %w", err)
+	}
+
+	// Get project info for subnet
+	projectInfo, hasProject := projectMgr.GetProject(projectName)
 
 	// Run docker-compose down
 	fmt.Println("\nStopping containers...")
@@ -86,27 +91,26 @@ func runDown(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Remove route (macOS only) - use subnet from local config
-	if localConfig != nil && localConfig.Subnet != "" {
+	// Remove route (macOS only) - use subnet from global config
+	if hasProject {
 		fmt.Println("\nCleaning up routing...")
-		if err := route.RemoveRoute(localConfig.Subnet); err != nil {
+		if err := route.RemoveRoute(projectInfo.Subnet); err != nil {
 			fmt.Printf("Warning: Failed to remove route: %v\n", err)
 		}
 	}
 
-	// Remove local config if requested
+	// Remove config if requested
 	if removeConfig {
-		fmt.Println("\nRemoving local configuration...")
-		localConfigPath := filepath.Join(projectPath, ".docker", "network.json")
-		if err := os.Remove(localConfigPath); err != nil && !os.IsNotExist(err) {
-			fmt.Printf("Warning: Failed to remove config: %v\n", err)
+		fmt.Println("\nRemoving project configuration...")
+		if err := projectMgr.RemoveProject(projectName); err != nil {
+			fmt.Printf("Warning: Failed to remove project config: %v\n", err)
 		} else {
-			fmt.Println("Removed local config")
+			fmt.Println("Removed from global config")
 		}
 	}
 
 	fmt.Println("\n✅ Containers stopped")
-	fmt.Printf("\n📁 Configuration: %s/.docker/network.json\n", projectPath)
+	fmt.Println("\n📁 Configuration: ~/.docker-bootapp/projects.json")
 
 	return nil
 }

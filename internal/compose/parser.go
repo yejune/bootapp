@@ -226,23 +226,58 @@ func extractDomainsFromLabels(labels interface{}) []string {
 }
 
 // extractTraefikHosts extracts hosts from Traefik Host() rule
-// Supports: Host(`a.com`) || Host(`b.com`) or Host(`a.com`, `b.com`)
+// Supports: Host(`a.com`) || Host(`b.com`) and Host(`a.com`, `b.com`)
 func extractTraefikHosts(rule string) []string {
 	var hosts []string
 	remaining := rule
 
 	for {
-		start := strings.Index(remaining, "Host(`")
+		// Find Host( - supports both Host(` and Host(
+		start := strings.Index(remaining, "Host(")
 		if start == -1 {
 			break
 		}
-		start += 6
-		end := strings.Index(remaining[start:], "`")
-		if end == -1 {
+		start += 5 // Move past "Host("
+
+		// Find the closing )
+		depth := 1
+		end := start
+		for i := start; i < len(remaining) && depth > 0; i++ {
+			if remaining[i] == '(' {
+				depth++
+			} else if remaining[i] == ')' {
+				depth--
+			}
+			if depth == 0 {
+				end = i
+			}
+		}
+
+		if end <= start {
 			break
 		}
-		hosts = append(hosts, remaining[start:start+end])
-		remaining = remaining[start+end:]
+
+		// Extract content inside Host()
+		content := remaining[start:end]
+
+		// Parse backtick-quoted domains: `domain1`, `domain2`
+		for {
+			tickStart := strings.Index(content, "`")
+			if tickStart == -1 {
+				break
+			}
+			tickEnd := strings.Index(content[tickStart+1:], "`")
+			if tickEnd == -1 {
+				break
+			}
+			host := content[tickStart+1 : tickStart+1+tickEnd]
+			if host != "" {
+				hosts = append(hosts, host)
+			}
+			content = content[tickStart+1+tickEnd+1:]
+		}
+
+		remaining = remaining[end:]
 	}
 
 	return hosts

@@ -11,8 +11,6 @@ import (
 const (
 	globalConfigDir  = ".docker-bootapp"
 	globalConfigFile = "projects.json"
-	localConfigDir   = ".docker"
-	localConfigFile  = "network.json"
 	// Subnet range: 172.18.0.0/16 to 172.31.0.0/16
 	subnetStart = 18
 	subnetEnd   = 31
@@ -29,46 +27,6 @@ type ProjectInfo struct {
 	Path   string `json:"path"`
 	Subnet string `json:"subnet"`
 	Domain string `json:"domain"`
-}
-
-// NetworkConfig stores local project network configuration
-type NetworkConfig struct {
-	Project    string                   `json:"project"`
-	Subnet     string                   `json:"subnet"`
-	Containers map[string]ContainerInfo `json:"containers"`
-}
-
-// LocalConfig is an alias for NetworkConfig (for cleaner API)
-type LocalConfig = NetworkConfig
-
-// SaveLocalConfig saves local config to project directory
-func SaveLocalConfig(projectPath string, config *LocalConfig) error {
-	localDir := filepath.Join(projectPath, localConfigDir)
-	if err := os.MkdirAll(localDir, 0755); err != nil {
-		return err
-	}
-
-	localPath := filepath.Join(localDir, localConfigFile)
-	data, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(localPath, data, 0644)
-}
-
-// LoadLocalConfig loads local config from project directory
-func LoadLocalConfig(projectPath string) (*LocalConfig, error) {
-	localPath := filepath.Join(projectPath, localConfigDir, localConfigFile)
-	data, err := os.ReadFile(localPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var config LocalConfig
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
 }
 
 // ProjectManager manages project configurations
@@ -100,15 +58,16 @@ func NewProjectManager() (*ProjectManager, error) {
 }
 
 // GetOrCreateProject returns existing project or creates a new one
-func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string) (*NetworkConfig, error) {
+func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string) (*ProjectInfo, error) {
 	// Check if project exists
 	if info, ok := m.projects[projectName]; ok {
-		// Load local config
-		localConfig, err := m.loadLocalConfig(info.Path)
-		if err == nil {
-			return localConfig, nil
+		// Update path if changed
+		if info.Path != projectPath {
+			info.Path = projectPath
+			m.projects[projectName] = info
+			m.saveGlobal()
 		}
-		// Local config missing, recreate it
+		return &info, nil
 	}
 
 	// Allocate new subnet
@@ -130,30 +89,7 @@ func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain str
 		return nil, err
 	}
 
-	// Create local config
-	localConfig := &NetworkConfig{
-		Project:    projectName,
-		Subnet:     subnet,
-		Containers: make(map[string]ContainerInfo),
-	}
-
-	// Save local config
-	if err := m.saveLocalConfig(projectPath, localConfig); err != nil {
-		return nil, err
-	}
-
-	return localConfig, nil
-}
-
-// UpdateContainers updates container info in local config
-func (m *ProjectManager) UpdateContainers(projectPath string, containers map[string]ContainerInfo) error {
-	localConfig, err := m.loadLocalConfig(projectPath)
-	if err != nil {
-		return err
-	}
-
-	localConfig.Containers = containers
-	return m.saveLocalConfig(projectPath, localConfig)
+	return &info, nil
 }
 
 // GetProject returns project info
@@ -173,19 +109,8 @@ func (m *ProjectManager) ListProjects() map[string]ProjectInfo {
 
 // RemoveProject removes a project
 func (m *ProjectManager) RemoveProject(projectName string) error {
-	if info, ok := m.projects[projectName]; ok {
-		// Remove local config
-		localPath := filepath.Join(info.Path, localConfigDir, localConfigFile)
-		os.Remove(localPath)
-	}
-
 	delete(m.projects, projectName)
 	return m.saveGlobal()
-}
-
-// GetLocalConfig loads local network config for a project path
-func (m *ProjectManager) GetLocalConfig(projectPath string) (*NetworkConfig, error) {
-	return m.loadLocalConfig(projectPath)
 }
 
 func (m *ProjectManager) allocateSubnet() (string, error) {
@@ -225,34 +150,6 @@ func (m *ProjectManager) saveGlobal() error {
 		return err
 	}
 	return os.WriteFile(m.globalPath, data, 0644)
-}
-
-func (m *ProjectManager) loadLocalConfig(projectPath string) (*NetworkConfig, error) {
-	localPath := filepath.Join(projectPath, localConfigDir, localConfigFile)
-	data, err := os.ReadFile(localPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var config NetworkConfig
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
-
-func (m *ProjectManager) saveLocalConfig(projectPath string, config *NetworkConfig) error {
-	localDir := filepath.Join(projectPath, localConfigDir)
-	if err := os.MkdirAll(localDir, 0755); err != nil {
-		return err
-	}
-
-	localPath := filepath.Join(localDir, localConfigFile)
-	data, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(localPath, data, 0644)
 }
 
 func extractSubnetNumber(subnet string) int {
