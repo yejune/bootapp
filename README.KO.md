@@ -10,45 +10,63 @@
 
 ## 설치
 
-### 방법 1: Homebrew 사용 (가장 간단, 권장)
+### 방법 1: Homebrew 사용 (macOS)
 
-macOS 또는 Linux:
 ```bash
 brew install yejune/tap/docker-bootapp
 ```
 
 Homebrew가 자동으로:
 - 최신 버전 다운로드 및 빌드
-- Docker CLI 플러그인으로 설치
+- Docker CLI 플러그인 설치 (`docker bootapp`)
+- 독립 실행 파일 설치 (`bootapp`)
 - 의존성 확인
 
-### 방법 2: go install 사용
+### 방법 2: 설치 스크립트 사용 (Linux/macOS)
+
+```bash
+# 저장소 클론
+git clone https://github.com/yejune/docker-bootapp.git
+cd docker-bootapp
+
+# 설치 스크립트 실행
+bash install.sh
+```
+
+설치 스크립트가 자동으로:
+- Go와 Docker 확인
+- 바이너리 빌드
+- `~/.docker/cli-plugins/docker-bootapp`에 설치 (Docker 플러그인)
+- `/usr/local/bin/bootapp`에 설치 (독립 실행 파일)
+- 플랫폼별 의존성 확인
+
+### 방법 3: go install 사용
 ```bash
 go install github.com/yejune/docker-bootapp@latest
 docker-bootapp install
 ```
 
-또는 로컬에서 빌드 후:
+또는 로컬에서 빌드:
 ```bash
+git clone https://github.com/yejune/docker-bootapp.git
+cd docker-bootapp
 go build
 ./docker-bootapp install
 ```
 
-`docker-bootapp install` 명령어가 자동으로:
-- Docker CLI 플러그인 디렉토리(`~/.docker/cli-plugins/`)에 바이너리 복사
+`install` 명령어가 자동으로:
+- `~/.docker/cli-plugins/docker-bootapp`에 바이너리 복사
+- `/usr/local/bin/bootapp`에 독립 실행 파일 설치
 - 실행 권한 설정
-- macOS에서 docker-mac-net-connect 의존성 확인
-
-### 방법 3: 설치 스크립트 사용
-```bash
-./install.sh
-```
+- 플랫폼 의존성 확인
 
 ### 방법 4: 수동 설치
 ```bash
 make build
 cp build/docker-bootapp ~/.docker/cli-plugins/docker-bootapp
 chmod +x ~/.docker/cli-plugins/docker-bootapp
+sudo cp build/docker-bootapp /usr/local/bin/bootapp
+sudo chmod +x /usr/local/bin/bootapp
 ```
 
 ## 사용법
