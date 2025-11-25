@@ -127,10 +127,3 @@ fi
 
 echo ""
 echo -e "${GREEN}🎉 Installation complete!${NC}"
-echo ""
-echo "Usage:"
-echo "  docker bootapp up      # Start containers with auto-networking"
-echo "  docker bootapp down    # Stop containers"
-echo "  docker bootapp ls      # List managed projects"
-echo ""
-echo "For more information, see README.md"
