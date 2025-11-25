@@ -83,7 +83,7 @@ func (m *ProjectManager) GetOrCreateProject(projectName, projectPath string, dom
 			prevDomains = []string{info.Domain}
 		}
 		if len(prevDomains) > 0 {
-			changes.PreviousDomain = prevDomains[0] // For legacy change detection
+			changes.PreviousDomain = strings.Join(prevDomains, ", ")
 		}
 		changes.PreviousSSLDomains = info.SSLDomains
 
