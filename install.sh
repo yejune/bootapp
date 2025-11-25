@@ -18,6 +18,11 @@ esac
 echo "🚀 Installing docker-bootapp..."
 echo ""
 
+# Request sudo access upfront (for later /usr/local/bin installation)
+echo "📋 Requesting sudo access for installation..."
+sudo -v
+echo ""
+
 # Check if Go is installed
 if ! command -v go &> /dev/null; then
     echo -e "${RED}Error: Go is not installed${NC}"
@@ -82,7 +87,6 @@ chmod +x "$PLUGIN_DIR/docker-bootapp"
 # Also install as standalone binary
 echo ""
 echo "📋 Installing standalone binary to /usr/local/bin/bootapp..."
-echo "   (sudo password may be required)"
 if sudo cp build/docker-bootapp /usr/local/bin/bootapp 2>/dev/null && sudo chmod +x /usr/local/bin/bootapp 2>/dev/null; then
     echo "✓ Standalone binary installed (you can use 'bootapp' command)"
 else
