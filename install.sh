@@ -42,12 +42,15 @@ fi
 
 echo "✓ Docker found: $(docker --version)"
 
-# Detect container runtime
+# Detect container runtime (check active context)
 RUNTIME="unknown"
-if docker context ls 2>/dev/null | grep -q "orbstack"; then
+CURRENT_CONTEXT=$(docker context show 2>/dev/null)
+if echo "$CURRENT_CONTEXT" | grep -q "orbstack"; then
     RUNTIME="OrbStack"
-elif docker context ls 2>/dev/null | grep -q "colima"; then
+elif echo "$CURRENT_CONTEXT" | grep -q "colima"; then
     RUNTIME="Colima"
+elif echo "$CURRENT_CONTEXT" | grep -q "desktop"; then
+    RUNTIME="Docker Desktop"
 elif [ -S "$HOME/.docker/run/docker.sock" ] || [ -S "/var/run/docker.sock" ]; then
     RUNTIME="Docker Desktop"
 fi
