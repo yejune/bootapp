@@ -27,6 +27,35 @@ fi
 
 echo "✓ Go found: $(go version)"
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}Error: Docker is not installed${NC}"
+    echo ""
+    echo "Please install one of the following:"
+    echo "  • Docker Desktop: https://www.docker.com/products/docker-desktop"
+    if [ "$OS_TYPE" = "macos" ]; then
+        echo "  • OrbStack: https://orbstack.dev"
+        echo "  • Colima: brew install colima"
+    fi
+    exit 1
+fi
+
+echo "✓ Docker found: $(docker --version)"
+
+# Detect container runtime
+RUNTIME="unknown"
+if docker context ls 2>/dev/null | grep -q "orbstack"; then
+    RUNTIME="OrbStack"
+elif docker context ls 2>/dev/null | grep -q "colima"; then
+    RUNTIME="Colima"
+elif [ -S "$HOME/.docker/run/docker.sock" ] || [ -S "/var/run/docker.sock" ]; then
+    RUNTIME="Docker Desktop"
+fi
+
+if [ "$RUNTIME" != "unknown" ]; then
+    echo "✓ Runtime detected: $RUNTIME"
+fi
+
 # Build the binary
 echo "📦 Building docker-bootapp..."
 go build -o build/docker-bootapp .
@@ -62,27 +91,33 @@ if [ "$OS_TYPE" = "macos" ]; then
     echo ""
     echo "🍎 macOS detected - checking dependencies..."
 
-    if ! command -v docker-mac-net-connect &> /dev/null; then
-        echo -e "${YELLOW}⚠️  docker-mac-net-connect is NOT installed${NC}"
-        echo ""
-        echo "On macOS, docker-mac-net-connect is required to access container IPs directly."
-        echo ""
-        echo "Install with:"
-        echo "  brew install chipmk/tap/docker-mac-net-connect"
-        echo "  sudo brew services start docker-mac-net-connect"
-        echo ""
+    # OrbStack has built-in network support, no need for docker-mac-net-connect
+    if [ "$RUNTIME" = "OrbStack" ]; then
+        echo "✓ OrbStack has built-in network support"
     else
-        echo "✓ docker-mac-net-connect is installed"
-
-        # Check if service is running
-        if brew services list | grep -q "docker-mac-net-connect.*started"; then
-            echo "✓ docker-mac-net-connect service is running"
-        else
-            echo -e "${YELLOW}⚠️  docker-mac-net-connect is installed but not running${NC}"
+        if ! command -v docker-mac-net-connect &> /dev/null; then
+            echo -e "${YELLOW}⚠️  docker-mac-net-connect is NOT installed${NC}"
             echo ""
-            echo "Start the service with:"
+            echo "On macOS with $RUNTIME, docker-mac-net-connect is recommended"
+            echo "to access container IPs directly."
+            echo ""
+            echo "Install with:"
+            echo "  brew install chipmk/tap/docker-mac-net-connect"
             echo "  sudo brew services start docker-mac-net-connect"
             echo ""
+        else
+            echo "✓ docker-mac-net-connect is installed"
+
+            # Check if service is running
+            if brew services list | grep -q "docker-mac-net-connect.*started"; then
+                echo "✓ docker-mac-net-connect service is running"
+            else
+                echo -e "${YELLOW}⚠️  docker-mac-net-connect is installed but not running${NC}"
+                echo ""
+                echo "Start the service with:"
+                echo "  sudo brew services start docker-mac-net-connect"
+                echo ""
+            fi
         fi
     fi
 fi
