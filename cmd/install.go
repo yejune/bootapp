@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -163,21 +164,22 @@ func copyFile(src, dst string) error {
 }
 
 func checkMacOSDependencies() {
-	// Detect active Docker runtime
-	contextCmd := exec.Command("docker", "context", "show")
-	contextOutput, err := contextCmd.Output()
+	// Detect active Docker runtime using docker info
+	// docker context show returns "default" for OrbStack, so we use docker info instead
+	infoCmd := exec.Command("docker", "info", "--format", "{{.OperatingSystem}}")
+	infoOutput, err := infoCmd.Output()
 	if err != nil {
 		return
 	}
 
-	currentContext := string(contextOutput)
+	osInfo := strings.TrimSpace(string(infoOutput))
 	runtime := "unknown"
 
-	if contains(currentContext, "orbstack") {
+	if strings.Contains(strings.ToLower(osInfo), "orbstack") {
 		runtime = "OrbStack"
-	} else if contains(currentContext, "colima") {
+	} else if strings.Contains(strings.ToLower(osInfo), "colima") {
 		runtime = "Colima"
-	} else if contains(currentContext, "desktop") {
+	} else {
 		runtime = "Docker Desktop"
 	}
 

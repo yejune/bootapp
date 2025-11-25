@@ -26,12 +26,13 @@ func CheckDockerMacNetConnect() bool {
 
 // CheckOrbStack checks if OrbStack is the Docker runtime
 func CheckOrbStack() bool {
-	cmd := exec.Command("docker", "context", "show")
+	// Use docker info instead of context show (OrbStack uses "default" context)
+	cmd := exec.Command("docker", "info", "--format", "{{.OperatingSystem}}")
 	output, err := cmd.Output()
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(output), "orbstack")
+	return strings.Contains(strings.ToLower(string(output)), "orbstack")
 }
 
 // SetupRoute checks routing requirements on macOS

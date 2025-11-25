@@ -47,16 +47,14 @@ fi
 
 echo "✓ Docker found: $(docker --version)"
 
-# Detect container runtime (check active context)
+# Detect container runtime using docker info (context show returns "default" for OrbStack)
 RUNTIME="unknown"
-CURRENT_CONTEXT=$(docker context show 2>/dev/null)
-if echo "$CURRENT_CONTEXT" | grep -q "orbstack"; then
+OS_INFO=$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)
+if echo "$OS_INFO" | grep -iq "orbstack"; then
     RUNTIME="OrbStack"
-elif echo "$CURRENT_CONTEXT" | grep -q "colima"; then
+elif echo "$OS_INFO" | grep -iq "colima"; then
     RUNTIME="Colima"
-elif echo "$CURRENT_CONTEXT" | grep -q "desktop"; then
-    RUNTIME="Docker Desktop"
-elif [ -S "$HOME/.docker/run/docker.sock" ] || [ -S "/var/run/docker.sock" ]; then
+else
     RUNTIME="Docker Desktop"
 fi
 
