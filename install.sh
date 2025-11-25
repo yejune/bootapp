@@ -53,7 +53,7 @@ elif [ -S "$HOME/.docker/run/docker.sock" ] || [ -S "/var/run/docker.sock" ]; th
 fi
 
 if [ "$RUNTIME" != "unknown" ]; then
-    echo "✓ Runtime detected: $RUNTIME"
+    echo "✓ Using container runtime: $RUNTIME"
 fi
 
 # Build the binary
