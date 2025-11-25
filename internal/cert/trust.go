@@ -115,13 +115,17 @@ func isTrustedDarwin(domain string) bool {
 		return false
 	}
 
-	// Look for domain with "Number of trust settings : " > 0
+	// Look for exact domain match with "Cert X: <domain>" format
+	// Then check "Number of trust settings : N" where N > 0
 	lines := strings.Split(string(output), "\n")
 	foundDomain := false
 	for _, line := range lines {
-		if strings.Contains(line, domain) {
+		// Check for exact domain match: "Cert X: domain"
+		if strings.HasSuffix(strings.TrimSpace(line), ": "+domain) {
 			foundDomain = true
+			continue
 		}
+		// After finding domain, check trust settings count
 		if foundDomain && strings.Contains(line, "Number of trust settings :") {
 			// "Number of trust settings : 0" means NOT trusted
 			// "Number of trust settings : 1" or more means trusted
@@ -129,6 +133,10 @@ func isTrustedDarwin(domain string) bool {
 				return false
 			}
 			return true
+		}
+		// Reset if we hit another cert entry without finding trust settings
+		if foundDomain && strings.HasPrefix(strings.TrimSpace(line), "Cert ") {
+			foundDomain = false
 		}
 	}
 	return false
