@@ -121,3 +121,24 @@ func PrintRouteInfo(subnet string) {
 		fmt.Println("macOS: docker-mac-net-connect required")
 	}
 }
+
+// NeedsDockerMacNetConnect returns true if docker-mac-net-connect is needed
+// Returns false for Linux or OrbStack (has built-in networking)
+func NeedsDockerMacNetConnect() bool {
+	if IsLinux() {
+		return false
+	}
+	if !IsDarwin() {
+		return false
+	}
+	// Check if OrbStack (doesn't need docker-mac-net-connect)
+	if CheckOrbStack() {
+		return false
+	}
+	return true
+}
+
+// IsDockerMacNetConnectRunning checks if docker-mac-net-connect service is running
+func IsDockerMacNetConnectRunning() bool {
+	return CheckDockerMacNetConnect()
+}

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -48,6 +49,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 	// Validate sudo credentials upfront (required for /etc/hosts and cert trust)
 	if err := ValidateSudo(); err != nil {
 		return fmt.Errorf("sudo authentication failed: %w", err)
+	}
+
+	// Check and setup network requirements (macOS only)
+	if err := ensureNetworkSetup(); err != nil {
+		return err
 	}
 
 	// Find or use specified docker-compose file
@@ -576,6 +582,78 @@ func selectComposeFile(files []string) (string, error) {
 	}
 
 	return files[index], nil
+}
+
+// ensureNetworkSetup checks and installs docker-mac-net-connect if needed
+func ensureNetworkSetup() error {
+	// Only needed on macOS with Docker Desktop or Colima
+	if !route.NeedsDockerMacNetConnect() {
+		return nil
+	}
+
+	// Check if already installed and running
+	if route.IsDockerMacNetConnectRunning() {
+		return nil
+	}
+
+	// Check if installed but not running
+	if _, err := exec.LookPath("docker-mac-net-connect"); err == nil {
+		fmt.Println("\n⚠️  docker-mac-net-connect is installed but not running")
+		fmt.Print("Would you like to start it? (Y/n): ")
+
+		var response string
+		fmt.Scanln(&response)
+
+		if response == "" || strings.ToLower(response) == "y" {
+			fmt.Println("Starting docker-mac-net-connect...")
+			cmd := exec.Command("sudo", "brew", "services", "start", "docker-mac-net-connect")
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("failed to start docker-mac-net-connect: %w", err)
+			}
+			fmt.Println("✓ docker-mac-net-connect started")
+			time.Sleep(2 * time.Second) // Wait for service to start
+			return nil
+		}
+		return fmt.Errorf("docker-mac-net-connect is required but not running")
+	}
+
+	// Not installed - offer to install
+	fmt.Println("\n⚠️  docker-mac-net-connect is required for container networking on macOS")
+	fmt.Print("Would you like to install it now? (Y/n): ")
+
+	var response string
+	fmt.Scanln(&response)
+
+	if response == "" || strings.ToLower(response) == "y" {
+		fmt.Println("\nInstalling docker-mac-net-connect...")
+
+		// Install via brew
+		installCmd := exec.Command("brew", "install", "chipmk/tap/docker-mac-net-connect")
+		installCmd.Stdout = os.Stdout
+		installCmd.Stderr = os.Stderr
+		if err := installCmd.Run(); err != nil {
+			return fmt.Errorf("failed to install docker-mac-net-connect: %w\n\nPlease install manually:\n  brew install chipmk/tap/docker-mac-net-connect", err)
+		}
+
+		fmt.Println("✓ docker-mac-net-connect installed")
+
+		// Start the service
+		fmt.Println("Starting docker-mac-net-connect service...")
+		startCmd := exec.Command("sudo", "brew", "services", "start", "docker-mac-net-connect")
+		startCmd.Stdout = os.Stdout
+		startCmd.Stderr = os.Stderr
+		if err := startCmd.Run(); err != nil {
+			return fmt.Errorf("failed to start docker-mac-net-connect: %w", err)
+		}
+
+		fmt.Println("✓ docker-mac-net-connect started")
+		time.Sleep(2 * time.Second) // Wait for service to start
+		return nil
+	}
+
+	return fmt.Errorf("docker-mac-net-connect is required but not installed\n\nInstall with:\n  brew install chipmk/tap/docker-mac-net-connect\n  sudo brew services start docker-mac-net-connect")
 }
 
 // collectAllDomains collects all unique domains from serviceDomains map
