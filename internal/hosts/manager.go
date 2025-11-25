@@ -12,6 +12,7 @@ import (
 
 const hostsFile = "/etc/hosts"
 const marker = "## bootapp"
+const legacyMarker = "## docker-bootapp" // For backward compatibility
 
 // AddEntries adds multiple entries to /etc/hosts (requires root)
 // Each container can have multiple domains
@@ -89,14 +90,24 @@ func RemoveEntry(domain, projectName string) error {
 }
 
 // RemoveProjectEntries removes all entries for a project (requires root)
+// Also removes legacy docker-bootapp entries for backward compatibility
 func RemoveProjectEntries(projectName string) error {
+	// Remove current marker entries
 	pattern := fmt.Sprintf("/%s:%s/d", marker, projectName)
-
 	cmd := exec.Command("sudo", "sed", "-i", "", pattern, hostsFile)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 
-	return cmd.Run()
+	// Also remove legacy marker entries (docker-bootapp -> bootapp migration)
+	legacyPattern := fmt.Sprintf("/%s:%s/d", legacyMarker, projectName)
+	legacyCmd := exec.Command("sudo", "sed", "-i", "", legacyPattern, hostsFile)
+	legacyCmd.Stdout = os.Stdout
+	legacyCmd.Stderr = os.Stderr
+
+	return legacyCmd.Run()
 }
 
 // EntryExists checks if a domain entry exists
