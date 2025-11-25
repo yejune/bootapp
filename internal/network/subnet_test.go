@@ -193,7 +193,7 @@ func TestProjectManager_GetOrCreateProject_New(t *testing.T) {
 		projects:   make(map[string]ProjectInfo),
 	}
 
-	info, err := mgr.GetOrCreateProject("myproject", "/path/to/project", "myproject.local")
+	info, _, err := mgr.GetOrCreateProject("myproject", "/path/to/project", []string{"myproject.local"}, nil)
 	if err != nil {
 		t.Fatalf("GetOrCreateProject() error = %v", err)
 	}
@@ -204,8 +204,8 @@ func TestProjectManager_GetOrCreateProject_New(t *testing.T) {
 	if info.Path != "/path/to/project" {
 		t.Errorf("Path = %q, want %q", info.Path, "/path/to/project")
 	}
-	if info.Domain != "myproject.local" {
-		t.Errorf("Domain = %q, want %q", info.Domain, "myproject.local")
+	if len(info.Domains) != 1 || info.Domains[0] != "myproject.local" {
+		t.Errorf("Domains = %v, want [%s]", info.Domains, "myproject.local")
 	}
 
 	// Verify saved to projects map
@@ -233,7 +233,7 @@ func TestProjectManager_GetOrCreateProject_Existing(t *testing.T) {
 	}
 
 	// Get existing project
-	info, err := mgr.GetOrCreateProject("existing", "/old/path", "existing.local")
+	info, _, err := mgr.GetOrCreateProject("existing", "/old/path", []string{"existing.local"}, nil)
 	if err != nil {
 		t.Fatalf("GetOrCreateProject() error = %v", err)
 	}
@@ -263,7 +263,7 @@ func TestProjectManager_GetOrCreateProject_UpdatePath(t *testing.T) {
 	}
 
 	// Call with new path
-	info, err := mgr.GetOrCreateProject("myproject", "/new/path", "myproject.local")
+	info, _, err := mgr.GetOrCreateProject("myproject", "/new/path", []string{"myproject.local"}, nil)
 	if err != nil {
 		t.Fatalf("GetOrCreateProject() error = %v", err)
 	}

@@ -44,7 +44,15 @@ func runLs(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\n📦 %s\n", name)
 		fmt.Printf("   Path:   %s\n", info.Path)
 		fmt.Printf("   Subnet: %s\n", info.Subnet)
-		fmt.Printf("   Domain: %s\n", info.Domain)
+
+		// Show domains (backward compatible with old Domain field)
+		domains := info.Domains
+		if len(domains) == 0 && info.Domain != "" {
+			domains = []string{info.Domain}
+		}
+		if len(domains) > 0 {
+			fmt.Printf("   Domains: %s\n", strings.Join(domains, ", "))
+		}
 	}
 
 	fmt.Println()

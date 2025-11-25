@@ -168,9 +168,14 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to initialize project manager: %w", err)
 	}
 
+	// Collect all domains from serviceDomains
+	allDomains := collectAllDomains(serviceDomains)
+	if len(allDomains) == 0 && baseDomain != "" {
+		allDomains = []string{baseDomain}
+	}
+
 	// Get or create project configuration (allocates unique subnet)
-	// Pass sslDomains to track changes
-	projectInfo, changes, err := projectMgr.GetOrCreateProject(projectName, projectPath, baseDomain, sslDomains)
+	projectInfo, changes, err := projectMgr.GetOrCreateProject(projectName, projectPath, allDomains, sslDomains)
 	if err != nil {
 		return fmt.Errorf("failed to setup project: %w", err)
 	}

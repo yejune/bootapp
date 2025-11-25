@@ -26,8 +26,11 @@ type ContainerInfo struct {
 type ProjectInfo struct {
 	Path       string   `json:"path"`
 	Subnet     string   `json:"subnet"`
-	Domain     string   `json:"domain"`
+	Domains    []string `json:"domains,omitempty"`
 	SSLDomains []string `json:"ssl_domains,omitempty"`
+
+	// Deprecated: use Domains instead (kept for backward compatibility)
+	Domain string `json:"domain,omitempty"`
 }
 
 // ProjectManager manages project configurations
@@ -68,17 +71,24 @@ type ProjectChanges struct {
 
 // GetOrCreateProject returns existing project or creates a new one
 // Also returns changes detected from previous config
-func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain string, sslDomains []string) (*ProjectInfo, *ProjectChanges, error) {
+func (m *ProjectManager) GetOrCreateProject(projectName, projectPath string, domains []string, sslDomains []string) (*ProjectInfo, *ProjectChanges, error) {
 	changes := &ProjectChanges{}
 
 	// Check if project exists
 	if info, ok := m.projects[projectName]; ok {
 		// Capture previous values for change detection
-		changes.PreviousDomain = info.Domain
+		// Support old Domain field for backward compatibility
+		prevDomains := info.Domains
+		if len(prevDomains) == 0 && info.Domain != "" {
+			prevDomains = []string{info.Domain}
+		}
+		if len(prevDomains) > 0 {
+			changes.PreviousDomain = prevDomains[0] // For legacy change detection
+		}
 		changes.PreviousSSLDomains = info.SSLDomains
 
 		// Check domain change
-		if info.Domain != domain {
+		if !slicesEqual(prevDomains, domains) {
 			changes.DomainChanged = true
 		}
 
@@ -91,8 +101,9 @@ func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain str
 			info.Path = projectPath
 			needSave = true
 		}
-		if info.Domain != domain {
-			info.Domain = domain
+		if !slicesEqual(info.Domains, domains) {
+			info.Domains = domains
+			info.Domain = "" // Clear deprecated field
 			needSave = true
 		}
 		if !slicesEqual(info.SSLDomains, sslDomains) {
@@ -116,7 +127,7 @@ func (m *ProjectManager) GetOrCreateProject(projectName, projectPath, domain str
 	info := ProjectInfo{
 		Path:       projectPath,
 		Subnet:     subnet,
-		Domain:     domain,
+		Domains:    domains,
 		SSLDomains: sslDomains,
 	}
 	m.projects[projectName] = info
