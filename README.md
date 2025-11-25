@@ -80,14 +80,14 @@ docker bootapp up
 docker bootapp -f docker-compose.local.yml up
 ```
 
-If multiple compose files are found, you'll be prompted to select:
+If multiple compose files are found, you'll be prompted to select interactively:
 ```
-Multiple compose files found:
-  [1] docker-compose.yml
-  [2] docker-compose.local.yml
-  [3] docker-compose.prod.yml
+Select compose file:
+▸ docker-compose.yml
+  docker-compose.local.yml
+  docker-compose.prod.yml
 
-Select file (1-3):
+Use ↑/↓ arrows to navigate, Enter to select
 ```
 
 Supported file patterns:

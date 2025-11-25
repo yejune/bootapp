@@ -80,14 +80,14 @@ docker bootapp up
 docker bootapp -f docker-compose.local.yml up
 ```
 
-여러 compose 파일이 있으면 선택 프롬프트가 표시됩니다:
+여러 compose 파일이 있으면 인터랙티브 선택 화면이 표시됩니다:
 ```
-Multiple compose files found:
-  [1] docker-compose.yml
-  [2] docker-compose.local.yml
-  [3] docker-compose.prod.yml
+Select compose file:
+▸ docker-compose.yml
+  docker-compose.local.yml
+  docker-compose.prod.yml
 
-Select file (1-3):
+↑/↓ 화살표로 이동, Enter로 선택
 ```
 
 지원하는 파일 패턴:
