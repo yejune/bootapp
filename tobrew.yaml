@@ -1,4 +1,5 @@
 name: docker-bootapp
+language: go
 description: "Docker Compose multi-project manager with automatic networking, /etc/hosts, and SSL certificates"
 homepage: https://github.com/yejune/docker-bootapp
 license: MIT
