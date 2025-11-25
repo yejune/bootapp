@@ -45,30 +45,37 @@ clean:
 test:
 	$(GOTEST) -v ./...
 
-# Install as Docker CLI plugin (macOS)
+# Install as Docker CLI plugin and standalone binary
 install:
 	@echo "Installing Docker CLI plugin..."
 	@mkdir -p ~/.docker/cli-plugins
 	@if [ "$$(uname -s)" = "Darwin" ]; then \
 		if [ "$$(uname -m)" = "arm64" ]; then \
 			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 /usr/local/bin/bootapp; \
 		else \
 			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 /usr/local/bin/bootapp; \
 		fi; \
 	elif [ "$$(uname -s)" = "Linux" ]; then \
 		if [ "$$(uname -m)" = "aarch64" ]; then \
 			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 /usr/local/bin/bootapp; \
 		else \
 			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 /usr/local/bin/bootapp; \
 		fi; \
 	fi
 	@chmod +x ~/.docker/cli-plugins/$(BINARY_NAME)
-	@echo "Installed to ~/.docker/cli-plugins/$(BINARY_NAME)"
-	@echo "Run 'docker bootapp --help' to verify"
+	@sudo chmod +x /usr/local/bin/bootapp
+	@echo "✓ Installed to ~/.docker/cli-plugins/$(BINARY_NAME)"
+	@echo "✓ Installed to /usr/local/bin/bootapp"
+	@echo "You can use: 'docker bootapp' or 'bootapp'"
 
 uninstall:
-	@echo "Uninstalling Docker CLI plugin..."
+	@echo "Uninstalling Docker CLI plugin and standalone binary..."
 	rm -f ~/.docker/cli-plugins/$(BINARY_NAME)
+	sudo rm -f /usr/local/bin/bootapp
 	@echo "Uninstalled"
 
 # Show help

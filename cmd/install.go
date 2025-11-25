@@ -87,16 +87,36 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to make executable: %w", err)
 	}
 
-	fmt.Println("✓ Binary installed successfully")
+	fmt.Println("✓ Docker plugin installed successfully")
+
+	// Also install as standalone binary
+	standalonePath := "/usr/local/bin/bootapp"
+	fmt.Printf("📋 Installing standalone binary to %s...\n", standalonePath)
+
+	sudoCmd := exec.Command("sudo", "cp", exePath, standalonePath)
+	sudoCmd.Stdin = os.Stdin
+	sudoCmd.Stdout = os.Stdout
+	sudoCmd.Stderr = os.Stderr
+
+	if err := sudoCmd.Run(); err != nil {
+		fmt.Println("⚠️  Warning: Could not install standalone binary")
+		fmt.Println("   You can still use 'docker bootapp' commands")
+	} else {
+		chmodCmd := exec.Command("sudo", "chmod", "+x", standalonePath)
+		if err := chmodCmd.Run(); err == nil {
+			fmt.Println("✓ Standalone binary installed (you can use 'bootapp' command)")
+		}
+	}
+
 	fmt.Println()
 
 	// Verify installation
-	verifyCmd := exec.Command("docker", "bootapp", "--version")
-	if output, err := verifyCmd.Output(); err == nil {
-		fmt.Printf("✓ Installation verified: %s\n", string(output))
+	verifyCmd := exec.Command("docker", "bootapp", "help")
+	if err := verifyCmd.Run(); err == nil {
+		fmt.Println("✓ Installation verified")
 	} else {
 		fmt.Println("⚠️  Warning: Unable to verify installation")
-		fmt.Println("   Please ensure Docker is running and try: docker bootapp --version")
+		fmt.Println("   Please ensure Docker is running and try: docker bootapp help")
 	}
 
 	// macOS specific checks
@@ -143,11 +163,35 @@ func copyFile(src, dst string) error {
 }
 
 func checkMacOSDependencies() {
-	// Check if docker-mac-net-connect is installed
+	// Detect active Docker runtime
+	contextCmd := exec.Command("docker", "context", "show")
+	contextOutput, err := contextCmd.Output()
+	if err != nil {
+		return
+	}
+
+	currentContext := string(contextOutput)
+	runtime := "unknown"
+
+	if contains(currentContext, "orbstack") {
+		runtime = "OrbStack"
+	} else if contains(currentContext, "colima") {
+		runtime = "Colima"
+	} else if contains(currentContext, "desktop") {
+		runtime = "Docker Desktop"
+	}
+
+	if runtime == "OrbStack" {
+		fmt.Println("✓ OrbStack has built-in network support")
+		return
+	}
+
+	// For Docker Desktop and Colima, check docker-mac-net-connect
 	if _, err := exec.LookPath("docker-mac-net-connect"); err != nil {
 		fmt.Println("⚠️  docker-mac-net-connect is NOT installed")
 		fmt.Println()
-		fmt.Println("On macOS, docker-mac-net-connect is required to access container IPs directly.")
+		fmt.Printf("On macOS with %s, docker-mac-net-connect is recommended\n", runtime)
+		fmt.Println("to access container IPs directly.")
 		fmt.Println()
 		fmt.Println("Install with:")
 		fmt.Println("  brew install chipmk/tap/docker-mac-net-connect")

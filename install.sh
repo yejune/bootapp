@@ -79,6 +79,18 @@ echo "📋 Installing to $PLUGIN_DIR..."
 cp build/docker-bootapp "$PLUGIN_DIR/docker-bootapp"
 chmod +x "$PLUGIN_DIR/docker-bootapp"
 
+# Also install as standalone binary
+echo ""
+echo "📋 Installing standalone binary to /usr/local/bin/bootapp..."
+echo "   (sudo password may be required)"
+if sudo cp build/docker-bootapp /usr/local/bin/bootapp 2>/dev/null && sudo chmod +x /usr/local/bin/bootapp 2>/dev/null; then
+    echo "✓ Standalone binary installed (you can use 'bootapp' command)"
+else
+    echo -e "${YELLOW}⚠️  Warning: Could not install standalone binary${NC}"
+    echo "   You can still use 'docker bootapp' commands"
+    echo "   Or manually install: sudo cp build/docker-bootapp /usr/local/bin/bootapp"
+fi
+
 echo -e "${GREEN}✓ docker-bootapp installed successfully!${NC}"
 echo ""
 
