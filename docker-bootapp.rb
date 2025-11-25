@@ -1,5 +1,5 @@
 class DockerBootapp < Formula
-  desc "Docker CLI Plugin for multi-project Docker networking made easy"
+  desc "Docker Compose multi-project manager with automatic networking, /etc/hosts, and SSL certificates"
   homepage "https://github.com/yejune/docker-bootapp"
   url "https://github.com/yejune/docker-bootapp/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "503cbab3bb70a539c2d30f8636af14995168a0ae6fff8649834fdb6cf6258ab4"
@@ -24,22 +24,39 @@ class DockerBootapp < Formula
 
   def caveats
     <<~EOS
-      docker-bootapp has been installed!
+      🎉 docker-bootapp has been installed!
+
+      Features:
+        ✓ Automatic unique subnet allocation per project
+        ✓ Auto /etc/hosts management (domain → container IP)
+        ✓ SSL certificate generation and system trust
+        ✓ Support for multiple Docker Compose projects simultaneously
+        ✓ Works with macOS (OrbStack/Docker Desktop/Colima) and Linux
 
       You can use it in two ways:
         docker bootapp [command]  # As Docker CLI plugin
         bootapp [command]         # As standalone binary
 
-      Usage:
-        docker bootapp up      # Start containers with auto-networking
-        docker bootapp down    # Stop containers
-        docker bootapp ls      # List managed projects
+      Quick Start:
+        cd your-docker-compose-project
+        docker bootapp up         # Start with auto-networking
+        docker bootapp down       # Stop and cleanup
+        docker bootapp ls         # List managed projects
 
-      On macOS with Docker Desktop/Colima, docker-mac-net-connect is recommended:
-        brew install chipmk/tap/docker-mac-net-connect
-        sudo brew services start docker-mac-net-connect
+      Environment Variables (in docker-compose.yml):
+        DOMAIN=myapp.test                    # Single domain
+        SSL_DOMAINS=app.test,api.test       # Multiple domains with SSL
+        DOMAINS=web.test,admin.test         # Multiple domains
 
-      On macOS with OrbStack or Linux, no additional tools needed!
+      Platform-specific requirements:
+        • macOS + Docker Desktop/Colima: docker-mac-net-connect recommended
+          brew install chipmk/tap/docker-mac-net-connect
+          sudo brew services start docker-mac-net-connect
+
+        • macOS + OrbStack: No additional tools needed! ✓
+        • Linux: No additional tools needed! ✓
+
+      Documentation: https://github.com/yejune/docker-bootapp
     EOS
   end
 
