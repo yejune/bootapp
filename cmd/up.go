@@ -101,11 +101,6 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	// Extract domains per service from compose file
 	serviceDomains := compose.ExtractServiceDomains(composeData)
-	baseDomain := compose.ExtractDomain(composeData)
-	if baseDomain == "" {
-		baseDomain = projectName + ".local"
-	}
-	fmt.Printf("Base Domain: %s\n", baseDomain)
 	if len(serviceDomains) > 0 {
 		fmt.Println("Service Domains:")
 		for svc, doms := range serviceDomains {
@@ -170,8 +165,9 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	// Collect all domains from serviceDomains
 	allDomains := collectAllDomains(serviceDomains)
-	if len(allDomains) == 0 && baseDomain != "" {
-		allDomains = []string{baseDomain}
+	if len(allDomains) == 0 {
+		// No domains in compose file, use project name as default
+		allDomains = []string{projectName + ".local"}
 	}
 
 	// Get or create project configuration (allocates unique subnet)
@@ -204,7 +200,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	// Clean up old hosts entries if domain changed
 	if changes.DomainChanged && changes.PreviousDomain != "" {
-		fmt.Printf("\nDomain changed: %s → %s\n", changes.PreviousDomain, baseDomain)
+		newDomain := allDomains[0]
+		if len(allDomains) > 0 {
+			newDomain = strings.Join(allDomains, ", ")
+		}
+		fmt.Printf("\nDomain changed: %s → %s\n", changes.PreviousDomain, newDomain)
 		fmt.Println("Cleaning up old /etc/hosts entries...")
 		if err := hosts.RemoveProjectEntries(projectName); err != nil {
 			fmt.Printf("  ⚠️  Failed to remove old hosts entries: %v\n", err)
@@ -277,12 +277,18 @@ func runUp(cmd *cobra.Command, args []string) error {
 	fmt.Println("\n📁 Configuration: ~/.docker-bootapp/projects.json")
 
 	// Get main app domain
-	appDomain := baseDomain
+	var appDomain string
 	if info, ok := containers["app"]; ok && len(info.Domains) > 0 {
 		appDomain = info.Domains[0]
+	} else if len(allDomains) > 0 {
+		appDomain = allDomains[0]
 	}
 
-	fmt.Printf("\n✅ Ready! Access your app at: https://%s\n", appDomain)
+	if appDomain != "" {
+		fmt.Printf("\n✅ Ready! Access your app at: https://%s\n", appDomain)
+	} else {
+		fmt.Printf("\n✅ Ready!\n")
+	}
 
 	return nil
 }
