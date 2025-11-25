@@ -104,9 +104,9 @@ else
     echo "Try running: docker bootapp help"
 fi
 
-# macOS specific checks
+# Platform specific checks
+echo ""
 if [ "$OS_TYPE" = "macos" ]; then
-    echo ""
     echo "🍎 macOS detected - checking dependencies..."
 
     # OrbStack has built-in network support, no need for docker-mac-net-connect
@@ -138,6 +138,11 @@ if [ "$OS_TYPE" = "macos" ]; then
             fi
         fi
     fi
+elif [ "$OS_TYPE" = "linux" ]; then
+    echo "🐧 Linux detected"
+    echo "✓ Container IPs are directly accessible on Linux"
+    echo "✓ SSL certificate trust supported (update-ca-certificates/update-ca-trust)"
+    echo "✓ /etc/hosts management supported"
 fi
 
 echo ""
