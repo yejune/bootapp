@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/yejune/docker-bootapp/internal/cert"
 	"github.com/yejune/docker-bootapp/internal/compose"
@@ -539,23 +540,31 @@ func getContainerIPsJSON(projectName string) (map[string]string, error) {
 
 // selectComposeFile prompts user to select from multiple compose files
 func selectComposeFile(files []string) (string, error) {
-	fmt.Println("Multiple compose files found:")
+	// Create display items (just filenames for cleaner display)
+	items := make([]string, len(files))
 	for i, f := range files {
-		fmt.Printf("  [%d] %s\n", i+1, filepath.Base(f))
+		items[i] = filepath.Base(f)
 	}
-	fmt.Print("\nSelect file (1-", len(files), "): ")
 
-	var selection int
-	_, err := fmt.Scanln(&selection)
+	// Create interactive prompt
+	prompt := promptui.Select{
+		Label: "Select compose file",
+		Items: items,
+		Size:  len(items),
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}:",
+			Active:   "▸ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+			Selected: "✓ {{ . | green }}",
+		},
+	}
+
+	index, _, err := prompt.Run()
 	if err != nil {
-		return "", fmt.Errorf("invalid selection: %w", err)
+		return "", fmt.Errorf("selection cancelled: %w", err)
 	}
 
-	if selection < 1 || selection > len(files) {
-		return "", fmt.Errorf("selection out of range: %d", selection)
-	}
-
-	return files[selection-1], nil
+	return files[index], nil
 }
 
 // collectAllDomains collects all unique domains from serviceDomains map
