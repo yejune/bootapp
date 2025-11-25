@@ -145,7 +145,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 		info := cert.DefaultCertInfo()
 		for _, domain := range sslDomains {
-			// Generate if not exists
+			// Generate if not exists (or force recreate already deleted it)
 			if !cert.CertExists(domain, certDir) {
 				if err := cert.GenerateCert(domain, certDir, info); err != nil {
 					fmt.Printf("  ⚠️  %s: failed to generate\n", domain)
@@ -155,10 +155,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 				certsGenerated = true
 			}
 			// Collect certs that need trust
-			if !cert.IsTrusted(domain) {
+			// -F (forceRecreate): always re-trust (certs were untrusted above)
+			if forceRecreate || !cert.IsTrusted(domain) {
 				certsToTrust = append(certsToTrust, domain)
 			} else {
-				fmt.Printf("  ✓ %s: trusted\n", domain)
+				fmt.Printf("  ✓ %s: already trusted\n", domain)
 			}
 		}
 	}
