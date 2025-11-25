@@ -13,8 +13,8 @@ import (
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install docker-bootapp as a Docker CLI plugin",
-	Long: `Install docker-bootapp as a Docker CLI plugin.
+	Short: "Install bootapp as a Docker CLI plugin",
+	Long: `Install bootapp as a Docker CLI plugin.
 
 This command copies the current binary to ~/.docker/cli-plugins/
 and makes it executable. After installation, you can use it as:
@@ -32,7 +32,7 @@ func init() {
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
-	fmt.Println("🚀 Installing docker-bootapp as Docker CLI plugin...")
+	fmt.Println("🚀 Installing bootapp as Docker CLI plugin...")
 	fmt.Println()
 
 	// Get current executable path
@@ -65,7 +65,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Check if already installed
 	if _, err := os.Stat(targetPath); err == nil {
-		fmt.Printf("⚠️  docker-bootapp is already installed at: %s\n", targetPath)
+		fmt.Printf("⚠️  docker-bootapp plugin is already installed at: %s\n", targetPath)
 		fmt.Print("Do you want to overwrite it? (y/N): ")
 
 		var response string

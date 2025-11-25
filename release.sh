@@ -89,8 +89,8 @@ echo -e "${BLUE}Step 3: Calculating SHA256...${NC}"
 sleep 3
 
 # Download tarball and calculate SHA256
-TARBALL_URL="https://github.com/yejune/docker-bootapp/archive/refs/tags/v${NEW_VERSION}.tar.gz"
-TARBALL_FILE="/tmp/docker-bootapp-${NEW_VERSION}.tar.gz"
+TARBALL_URL="https://github.com/yejune/bootapp/archive/refs/tags/v${NEW_VERSION}.tar.gz"
+TARBALL_FILE="/tmp/bootapp-${NEW_VERSION}.tar.gz"
 
 curl -L -o "$TARBALL_FILE" "$TARBALL_URL"
 SHA256=$(shasum -a 256 "$TARBALL_FILE" | awk '{print $1}')
@@ -101,14 +101,14 @@ echo "✓ SHA256: ${SHA256}"
 echo ""
 echo -e "${BLUE}Step 4: Updating Homebrew formula...${NC}"
 
-# Update docker-bootapp.rb
-sed -i '' "s|url \"https://github.com/yejune/docker-bootapp/archive/refs/tags/v.*\.tar\.gz\"|url \"https://github.com/yejune/docker-bootapp/archive/refs/tags/v${NEW_VERSION}.tar.gz\"|" docker-bootapp.rb
-sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" docker-bootapp.rb
+# Update bootapp.rb
+sed -i '' "s|url \"https://github.com/yejune/bootapp/archive/refs/tags/v.*\.tar\.gz\"|url \"https://github.com/yejune/bootapp/archive/refs/tags/v${NEW_VERSION}.tar.gz\"|" bootapp.rb
+sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" bootapp.rb
 
-echo "✓ Updated docker-bootapp.rb"
+echo "✓ Updated bootapp.rb"
 
 # Commit formula update
-git add docker-bootapp.rb
+git add bootapp.rb
 git commit -m "chore: update Homebrew formula to v${NEW_VERSION}"
 git push origin main
 echo "✓ Pushed formula update"
@@ -124,11 +124,11 @@ cd homebrew-tap
 git init
 
 # Copy updated formula
-cp /Users/max/Work/tmp/docker-bootapp/docker-bootapp.rb .
+cp /Users/max/Work/tmp/bootapp/bootapp.rb .
 
 # Commit and push
-git add docker-bootapp.rb
-git commit -m "Update docker-bootapp to v${NEW_VERSION}"
+git add bootapp.rb
+git commit -m "Update bootapp to v${NEW_VERSION}"
 git remote add origin https://github.com/yejune/homebrew-tap.git
 git branch -M main
 git push -f origin main
@@ -140,7 +140,7 @@ echo -e "${GREEN}🎉 Release v${NEW_VERSION} completed!${NC}"
 echo ""
 echo "Users can now install/upgrade with:"
 echo "  brew update"
-echo "  brew upgrade docker-bootapp"
+echo "  brew upgrade bootapp"
 echo ""
 echo "Or fresh install:"
-echo "  brew install yejune/tap/docker-bootapp"
+echo "  brew install yejune/tap/bootapp"

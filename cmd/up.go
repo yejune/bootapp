@@ -11,11 +11,11 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/yejune/docker-bootapp/internal/cert"
-	"github.com/yejune/docker-bootapp/internal/compose"
-	"github.com/yejune/docker-bootapp/internal/hosts"
-	"github.com/yejune/docker-bootapp/internal/network"
-	"github.com/yejune/docker-bootapp/internal/route"
+	"github.com/yejune/bootapp/internal/cert"
+	"github.com/yejune/bootapp/internal/compose"
+	"github.com/yejune/bootapp/internal/hosts"
+	"github.com/yejune/bootapp/internal/network"
+	"github.com/yejune/bootapp/internal/route"
 )
 
 var (
@@ -96,7 +96,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	// Validate compose file for bootapp compatibility
 	if err := compose.ValidateForBootapp(composeData); err != nil {
 		return fmt.Errorf("%s\n\n"+
-			"docker-bootapp manages networks automatically and is intended for local development.\n"+
+			"bootapp manages networks automatically and is intended for local development.\n"+
 			"Please remove network configurations from your compose file, or use 'docker compose' directly.", err)
 	}
 
@@ -280,7 +280,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Print config file location
-	fmt.Println("\n📁 Configuration: ~/.docker-bootapp/projects.json")
+	fmt.Println("\n📁 Configuration: ~/.bootapp/projects.json")
 
 	// Get main app domain
 	var appDomain string

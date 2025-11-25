@@ -1,5 +1,6 @@
 # Build output
 build/
+bootapp
 docker-bootapp
 release.tar.gz
 

@@ -1,12 +1,12 @@
-name: docker-bootapp
+name: bootapp
 language: go
 description: "Docker Compose multi-project manager with automatic networking, /etc/hosts, and SSL certificates"
-homepage: https://github.com/yejune/docker-bootapp
+homepage: https://github.com/yejune/bootapp
 license: MIT
 
 github:
   user: yejune
-  repo: docker-bootapp
+  repo: bootapp
   tap_repo: homebrew-tap
 
 build:
@@ -14,23 +14,20 @@ build:
 
 formula:
   install: |
-    system "go", "build", *std_go_args(output: bin/"docker-bootapp"), "."
+    system "go", "build", *std_go_args(output: bin/"bootapp"), "."
 
-    # Install to Docker CLI plugins directory
+    # Install to Docker CLI plugins directory (must be docker-<name> format)
     docker_plugins = "#{ENV["HOME"]}/.docker/cli-plugins"
     mkdir_p docker_plugins
-    cp bin/"docker-bootapp", "#{docker_plugins}/docker-bootapp"
+    cp bin/"bootapp", "#{docker_plugins}/docker-bootapp"
     chmod 0755, "#{docker_plugins}/docker-bootapp"
 
-    # Also install as standalone 'bootapp' binary
-    bin.install_symlink "docker-bootapp" => "bootapp"
-
   test: |
-    assert_match "bootapp", shell_output("#{bin}/docker-bootapp help")
+    assert_match "bootapp", shell_output("#{bin}/bootapp help")
     assert_match "bootapp", shell_output("#{bin}/bootapp help")
 
   caveats: |
-    docker-bootapp has been installed!
+    bootapp has been installed!
 
     Features:
       ✓ Automatic unique subnet allocation per project
@@ -49,4 +46,4 @@ formula:
       docker bootapp down       # Stop and cleanup
       docker bootapp ls         # List managed projects
 
-    Documentation: https://github.com/yejune/docker-bootapp
+    Documentation: https://github.com/yejune/bootapp

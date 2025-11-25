@@ -1,4 +1,4 @@
-# docker-bootapp
+# bootapp
 
 멀티 프로젝트 Docker 네트워킹을 쉽게 관리하는 Docker CLI 플러그인.
 
@@ -13,7 +13,7 @@
 ### 방법 1: Homebrew 사용 (macOS)
 
 ```bash
-brew install yejune/tap/docker-bootapp
+brew install yejune/tap/bootapp
 ```
 
 Homebrew가 자동으로:
@@ -26,8 +26,8 @@ Homebrew가 자동으로:
 
 ```bash
 # 저장소 클론
-git clone https://github.com/yejune/docker-bootapp.git
-cd docker-bootapp
+git clone https://github.com/yejune/bootapp.git
+cd bootapp
 
 # 설치 스크립트 실행
 bash install.sh
@@ -36,26 +36,26 @@ bash install.sh
 설치 스크립트가 자동으로:
 - Go와 Docker 확인
 - 바이너리 빌드
-- `~/.docker/cli-plugins/docker-bootapp`에 설치 (Docker 플러그인)
+- `~/.docker/cli-plugins/bootapp`에 설치 (Docker 플러그인)
 - `/usr/local/bin/bootapp`에 설치 (독립 실행 파일)
 - 플랫폼별 의존성 확인
 
 ### 방법 3: go install 사용
 ```bash
-go install github.com/yejune/docker-bootapp@latest
-docker-bootapp install
+go install github.com/yejune/bootapp@latest
+bootapp install
 ```
 
 또는 로컬에서 빌드:
 ```bash
-git clone https://github.com/yejune/docker-bootapp.git
-cd docker-bootapp
+git clone https://github.com/yejune/bootapp.git
+cd bootapp
 go build
-./docker-bootapp install
+./bootapp install
 ```
 
 `install` 명령어가 자동으로:
-- `~/.docker/cli-plugins/docker-bootapp`에 바이너리 복사
+- `~/.docker/cli-plugins/bootapp`에 바이너리 복사
 - `/usr/local/bin/bootapp`에 독립 실행 파일 설치
 - 실행 권한 설정
 - 플랫폼 의존성 확인
@@ -63,9 +63,9 @@ go build
 ### 방법 4: 수동 설치
 ```bash
 make build
-cp build/docker-bootapp ~/.docker/cli-plugins/docker-bootapp
-chmod +x ~/.docker/cli-plugins/docker-bootapp
-sudo cp build/docker-bootapp /usr/local/bin/bootapp
+cp build/bootapp ~/.docker/cli-plugins/bootapp
+chmod +x ~/.docker/cli-plugins/bootapp
+sudo cp build/bootapp /usr/local/bin/bootapp
 sudo chmod +x /usr/local/bin/bootapp
 ```
 
@@ -179,9 +179,9 @@ services:
 도메인 설정이 있는 서비스만 /etc/hosts에 추가됩니다:
 
 ```
-172.18.0.2    myapp.local        ## docker-bootapp:myproject
-172.18.0.2    www.myapp.local    ## docker-bootapp:myproject
-172.18.0.3    mysql.myapp.local  ## docker-bootapp:myproject
+172.18.0.2    myapp.local        ## bootapp:myproject
+172.18.0.2    www.myapp.local    ## bootapp:myproject
+172.18.0.3    mysql.myapp.local  ## bootapp:myproject
 ```
 
 DOMAIN 설정이 없는 서비스(위의 redis)는 /etc/hosts에 추가되지 않습니다.
@@ -306,7 +306,7 @@ macOS와 달리 Linux는 추가 네트워크 도구(`docker-mac-net-connect`) �
 
 ## 설정 파일
 
-글로벌 설정은 `~/.docker-bootapp/projects.json`에 저장됩니다:
+글로벌 설정은 `~/.bootapp/projects.json`에 저장됩니다:
 
 ```json
 {

@@ -15,7 +15,7 @@ case "$OS" in
     *)          OS_TYPE="unknown";;
 esac
 
-echo "🚀 Installing docker-bootapp..."
+echo "🚀 Installing bootapp..."
 echo ""
 
 # Request sudo access upfront (for later /usr/local/bin installation)
@@ -65,10 +65,10 @@ if [ "$RUNTIME" != "unknown" ]; then
 fi
 
 # Build the binary
-echo "📦 Building docker-bootapp..."
-go build -o build/docker-bootapp .
+echo "📦 Building bootapp..."
+go build -o build/bootapp .
 
-if [ ! -f "build/docker-bootapp" ]; then
+if [ ! -f "build/bootapp" ]; then
     echo -e "${RED}Error: Build failed${NC}"
     exit 1
 fi
@@ -81,21 +81,21 @@ mkdir -p "$PLUGIN_DIR"
 
 # Copy binary to Docker CLI plugins directory
 echo "📋 Installing to $PLUGIN_DIR..."
-cp build/docker-bootapp "$PLUGIN_DIR/docker-bootapp"
-chmod +x "$PLUGIN_DIR/docker-bootapp"
+cp build/bootapp "$PLUGIN_DIR/bootapp"
+chmod +x "$PLUGIN_DIR/bootapp"
 
 # Also install as standalone binary
 echo ""
 echo "📋 Installing standalone binary to /usr/local/bin/bootapp..."
-if sudo cp build/docker-bootapp /usr/local/bin/bootapp 2>/dev/null && sudo chmod +x /usr/local/bin/bootapp 2>/dev/null; then
+if sudo cp build/bootapp /usr/local/bin/bootapp 2>/dev/null && sudo chmod +x /usr/local/bin/bootapp 2>/dev/null; then
     echo "✓ Standalone binary installed (you can use 'bootapp' command)"
 else
     echo -e "${YELLOW}⚠️  Warning: Could not install standalone binary${NC}"
     echo "   You can still use 'docker bootapp' commands"
-    echo "   Or manually install: sudo cp build/docker-bootapp /usr/local/bin/bootapp"
+    echo "   Or manually install: sudo cp build/bootapp /usr/local/bin/bootapp"
 fi
 
-echo -e "${GREEN}✓ docker-bootapp installed successfully!${NC}"
+echo -e "${GREEN}✓ bootapp installed successfully!${NC}"
 echo ""
 
 # Verify installation

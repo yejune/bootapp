@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yejune/docker-bootapp/internal/network"
+	"github.com/yejune/bootapp/internal/network"
 )
 
 func TestMarkerFormat(t *testing.T) {
 	// Test that marker is correct
-	if marker != "## docker-bootapp" {
-		t.Errorf("marker = %q, want %q", marker, "## docker-bootapp")
+	if marker != "## bootapp" {
+		t.Errorf("marker = %q, want %q", marker, "## bootapp")
 	}
 }
 
@@ -23,7 +23,7 @@ func TestBuildEntry(t *testing.T) {
 	// Build entry manually (same logic as AddEntry)
 	entry := ip + "\t" + domain + "\t" + marker + ":" + projectName
 
-	expected := "172.18.0.2\tmyapp.local\t## docker-bootapp:myproject"
+	expected := "172.18.0.2\tmyapp.local\t## bootapp:myproject"
 	if entry != expected {
 		t.Errorf("entry = %q, want %q", entry, expected)
 	}
@@ -139,7 +139,7 @@ func TestSedPattern(t *testing.T) {
 	// Pattern for removing project entries
 	pattern := "/" + marker + ":" + projectName + "/d"
 
-	expected := "/## docker-bootapp:myproject/d"
+	expected := "/## bootapp:myproject/d"
 	if pattern != expected {
 		t.Errorf("pattern = %q, want %q", pattern, expected)
 	}
@@ -155,14 +155,14 @@ func TestParseHostsLine(t *testing.T) {
 	}{
 		{
 			"bootapp entry",
-			"172.18.0.2\tmyapp.local\t## docker-bootapp:myproject",
+			"172.18.0.2\tmyapp.local\t## bootapp:myproject",
 			"172.18.0.2",
 			"myapp.local",
 			true,
 		},
 		{
 			"bootapp entry with spaces",
-			"172.18.0.2  myapp.local  ## docker-bootapp:myproject",
+			"172.18.0.2  myapp.local  ## bootapp:myproject",
 			"172.18.0.2",
 			"myapp.local",
 			true,
@@ -218,10 +218,10 @@ func TestParseHostsLine(t *testing.T) {
 func TestFilterMarkedLines(t *testing.T) {
 	lines := []string{
 		"127.0.0.1\tlocalhost",
-		"172.18.0.2\tmyapp.local\t## docker-bootapp:myproject",
-		"172.18.0.3\tapi.local\t## docker-bootapp:myproject",
+		"172.18.0.2\tmyapp.local\t## bootapp:myproject",
+		"172.18.0.3\tapi.local\t## bootapp:myproject",
 		"192.168.1.1\trouter.local",
-		"172.19.0.2\tother.local\t## docker-bootapp:otherproject",
+		"172.19.0.2\tother.local\t## bootapp:otherproject",
 	}
 
 	// Filter lines with our marker
@@ -239,9 +239,9 @@ func TestFilterMarkedLines(t *testing.T) {
 
 func TestFilterByProject(t *testing.T) {
 	lines := []string{
-		"172.18.0.2\tmyapp.local\t## docker-bootapp:myproject",
-		"172.18.0.3\tapi.local\t## docker-bootapp:myproject",
-		"172.19.0.2\tother.local\t## docker-bootapp:otherproject",
+		"172.18.0.2\tmyapp.local\t## bootapp:myproject",
+		"172.18.0.3\tapi.local\t## bootapp:myproject",
+		"172.19.0.2\tother.local\t## bootapp:otherproject",
 	}
 
 	projectName := "myproject"
@@ -265,8 +265,8 @@ func TestListEntriesFromContent(t *testing.T) {
 	content := `127.0.0.1	localhost
 255.255.255.255	broadcasthost
 ::1             localhost
-172.18.0.2	myapp.local	## docker-bootapp:myproject
-172.18.0.3	api.local	## docker-bootapp:myproject
+172.18.0.2	myapp.local	## bootapp:myproject
+172.18.0.3	api.local	## bootapp:myproject
 # Some comment
 192.168.1.1	router.local
 `
@@ -292,12 +292,12 @@ func TestGetIPFromLine(t *testing.T) {
 		wantIP string
 	}{
 		{
-			"172.18.0.2\tmyapp.local\t## docker-bootapp:myproject",
+			"172.18.0.2\tmyapp.local\t## bootapp:myproject",
 			"myapp.local",
 			"172.18.0.2",
 		},
 		{
-			"172.18.0.3  api.local  ## docker-bootapp:myproject",
+			"172.18.0.3  api.local  ## bootapp:myproject",
 			"api.local",
 			"172.18.0.3",
 		},
@@ -327,7 +327,7 @@ func TestWithTempHostsFile(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	content := `127.0.0.1	localhost
-172.18.0.2	myapp.local	## docker-bootapp:myproject
+172.18.0.2	myapp.local	## bootapp:myproject
 `
 	if _, err := tmpFile.WriteString(content); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
@@ -354,7 +354,7 @@ func TestWithTempHostsFile(t *testing.T) {
 }
 
 func TestEntryContainsDomain(t *testing.T) {
-	line := "172.18.0.2\tmyapp.local\t## docker-bootapp:myproject"
+	line := "172.18.0.2\tmyapp.local\t## bootapp:myproject"
 
 	tests := []struct {
 		domain string

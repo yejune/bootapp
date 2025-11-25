@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/yejune/docker-bootapp/internal/compose"
-	"github.com/yejune/docker-bootapp/internal/hosts"
-	"github.com/yejune/docker-bootapp/internal/network"
-	"github.com/yejune/docker-bootapp/internal/route"
+	"github.com/yejune/bootapp/internal/compose"
+	"github.com/yejune/bootapp/internal/hosts"
+	"github.com/yejune/bootapp/internal/network"
+	"github.com/yejune/bootapp/internal/route"
 )
 
 var (
@@ -127,7 +127,7 @@ func runDown(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("\n✅ Containers stopped")
-	fmt.Println("\n📁 Configuration: ~/.docker-bootapp/projects.json")
+	fmt.Println("\n📁 Configuration: ~/.bootapp/projects.json")
 
 	return nil
 }

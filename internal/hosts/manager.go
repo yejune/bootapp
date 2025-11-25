@@ -7,11 +7,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/yejune/docker-bootapp/internal/network"
+	"github.com/yejune/bootapp/internal/network"
 )
 
 const hostsFile = "/etc/hosts"
-const marker = "## docker-bootapp"
+const marker = "## bootapp"
 
 // AddEntries adds multiple entries to /etc/hosts (requires root)
 // Each container can have multiple domains

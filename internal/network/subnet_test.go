@@ -424,7 +424,7 @@ func TestNewProjectManager(t *testing.T) {
 		t.Fatal("NewProjectManager() returned nil")
 	}
 
-	expectedPath := filepath.Join(tmpDir, ".docker-bootapp", "projects.json")
+	expectedPath := filepath.Join(tmpDir, ".bootapp", "projects.json")
 	if mgr.globalPath != expectedPath {
 		t.Errorf("globalPath = %q, want %q", mgr.globalPath, expectedPath)
 	}

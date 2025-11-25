@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/yejune/docker-bootapp/internal/hosts"
-	"github.com/yejune/docker-bootapp/internal/network"
+	"github.com/yejune/bootapp/internal/hosts"
+	"github.com/yejune/bootapp/internal/network"
 )
 
 var lsCmd = &cobra.Command{
@@ -57,7 +57,7 @@ func runLs(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 	fmt.Println(strings.Repeat("=", 70))
-	fmt.Println("/etc/hosts Entries (docker-bootapp managed):")
+	fmt.Println("/etc/hosts Entries (bootapp managed):")
 	fmt.Println(strings.Repeat("-", 70))
 
 	if len(hostEntries) == 0 {
@@ -69,7 +69,7 @@ func runLs(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("📁 Config: ~/.docker-bootapp/projects.json")
+	fmt.Println("📁 Config: ~/.bootapp/projects.json")
 
 	return nil
 }

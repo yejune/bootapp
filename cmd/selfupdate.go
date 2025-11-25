@@ -14,14 +14,14 @@ import (
 )
 
 const (
-	githubAPI   = "https://api.github.com/repos/yejune/docker-bootapp/releases/latest"
-	downloadURL = "https://github.com/yejune/docker-bootapp/releases/download/%s/docker-bootapp-%s-%s"
+	githubAPI   = "https://api.github.com/repos/yejune/bootapp/releases/latest"
+	downloadURL = "https://github.com/yejune/bootapp/releases/download/%s/bootapp-%s-%s"
 )
 
 var selfUpdateCmd = &cobra.Command{
 	Use:   "self-update",
-	Short: "Update docker-bootapp to the latest version",
-	Long: `Update docker-bootapp to the latest version from GitHub releases.
+	Short: "Update bootapp to the latest version",
+	Long: `Update bootapp to the latest version from GitHub releases.
 
 This downloads the latest release binary and replaces the current installation.
 
@@ -68,7 +68,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("📦 Downloading %s...\n", latestVersion)
 
 	// Download binary
-	tmpFile := filepath.Join(os.TempDir(), "docker-bootapp-new")
+	tmpFile := filepath.Join(os.TempDir(), "bootapp-new")
 	if err := downloadFile(tmpFile, downloadPath); err != nil {
 		return fmt.Errorf("failed to download: %w", err)
 	}
@@ -113,7 +113,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 	fmt.Println("✅ Update complete!")
-	fmt.Printf("docker-bootapp has been updated to %s\n", latestVersion)
+	fmt.Printf("bootapp has been updated to %s\n", latestVersion)
 
 	return nil
 }

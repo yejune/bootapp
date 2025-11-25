@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/yejune/docker-bootapp/internal/cert"
-	"github.com/yejune/docker-bootapp/internal/compose"
+	"github.com/yejune/bootapp/internal/cert"
+	"github.com/yejune/bootapp/internal/compose"
 )
 
 var certCmd = &cobra.Command{

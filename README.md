@@ -1,4 +1,4 @@
-# docker-bootapp
+# bootapp
 
 Docker CLI Plugin for multi-project Docker networking made easy.
 
@@ -13,7 +13,7 @@ Automatically manages:
 ### Method 1: Using Homebrew (macOS)
 
 ```bash
-brew install yejune/tap/docker-bootapp
+brew install yejune/tap/bootapp
 ```
 
 Homebrew automatically:
@@ -26,8 +26,8 @@ Homebrew automatically:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yejune/docker-bootapp.git
-cd docker-bootapp
+git clone https://github.com/yejune/bootapp.git
+cd bootapp
 
 # Run install script
 bash install.sh
@@ -36,26 +36,26 @@ bash install.sh
 The install script automatically:
 - Checks for Go and Docker
 - Builds the binary
-- Installs to `~/.docker/cli-plugins/docker-bootapp` (Docker plugin)
+- Installs to `~/.docker/cli-plugins/bootapp` (Docker plugin)
 - Installs to `/usr/local/bin/bootapp` (standalone binary)
 - Checks platform-specific dependencies
 
 ### Method 3: Using go install
 ```bash
-go install github.com/yejune/docker-bootapp@latest
-docker-bootapp install
+go install github.com/yejune/bootapp@latest
+bootapp install
 ```
 
 Or build locally:
 ```bash
-git clone https://github.com/yejune/docker-bootapp.git
-cd docker-bootapp
+git clone https://github.com/yejune/bootapp.git
+cd bootapp
 go build
-./docker-bootapp install
+./bootapp install
 ```
 
 The `install` command automatically:
-- Copies binary to `~/.docker/cli-plugins/docker-bootapp`
+- Copies binary to `~/.docker/cli-plugins/bootapp`
 - Installs standalone binary to `/usr/local/bin/bootapp`
 - Sets executable permissions
 - Checks platform dependencies
@@ -63,9 +63,9 @@ The `install` command automatically:
 ### Method 4: Manual installation
 ```bash
 make build
-cp build/docker-bootapp ~/.docker/cli-plugins/docker-bootapp
-chmod +x ~/.docker/cli-plugins/docker-bootapp
-sudo cp build/docker-bootapp /usr/local/bin/bootapp
+cp build/bootapp ~/.docker/cli-plugins/bootapp
+chmod +x ~/.docker/cli-plugins/bootapp
+sudo cp build/bootapp /usr/local/bin/bootapp
 sudo chmod +x /usr/local/bin/bootapp
 ```
 
@@ -179,9 +179,9 @@ services:
 Only services with explicit domain configuration get /etc/hosts entries:
 
 ```
-172.18.0.2    myapp.local        ## docker-bootapp:myproject
-172.18.0.2    www.myapp.local    ## docker-bootapp:myproject
-172.18.0.3    mysql.myapp.local  ## docker-bootapp:myproject
+172.18.0.2    myapp.local        ## bootapp:myproject
+172.18.0.2    www.myapp.local    ## bootapp:myproject
+172.18.0.3    mysql.myapp.local  ## bootapp:myproject
 ```
 
 Services without DOMAIN config (like redis above) are not added to /etc/hosts.
@@ -306,7 +306,7 @@ Unlike macOS, Linux doesn't need additional network tools (`docker-mac-net-conne
 
 ## Configuration
 
-Global configuration is stored in `~/.docker-bootapp/projects.json`:
+Global configuration is stored in `~/.bootapp/projects.json`:
 
 ```json
 {

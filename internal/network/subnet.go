@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	globalConfigDir  = ".docker-bootapp"
+	globalConfigDir  = ".bootapp"
 	globalConfigFile = "projects.json"
 	// Subnet range: 172.18.0.0/16 to 172.31.0.0/16
 	subnetStart = 18

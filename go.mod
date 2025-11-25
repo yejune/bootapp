@@ -1,4 +1,4 @@
-module github.com/yejune/docker-bootapp
+module github.com/yejune/bootapp
 
 go 1.21
 

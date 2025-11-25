@@ -1,6 +1,6 @@
 package main
 
-import "github.com/yejune/docker-bootapp/cmd"
+import "github.com/yejune/bootapp/cmd"
 
 func main() {
 	cmd.Execute()
