@@ -161,8 +161,13 @@ func slicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+	// Compare as sets (order independent)
+	aMap := make(map[string]bool)
+	for _, v := range a {
+		aMap[v] = true
+	}
+	for _, v := range b {
+		if !aMap[v] {
 			return false
 		}
 	}
