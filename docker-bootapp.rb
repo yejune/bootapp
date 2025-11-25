@@ -37,16 +37,23 @@ class DockerBootapp < Formula
         docker bootapp [command]  # As Docker CLI plugin
         bootapp [command]         # As standalone binary
 
-      Quick Start:
-        cd your-docker-compose-project
-        docker bootapp up         # Start with auto-networking
-        docker bootapp down       # Stop and cleanup
-        docker bootapp ls         # List managed projects
+      Available Commands:
+        up          Create and start containers with network setup
+                    Flags: -d (detach), -F (force-recreate), --no-build, --pull
+        down        Stop and remove containers
+        ls          List registered projects
+        cert        Manage SSL certificates
+                    Subcommands: detect, generate, install, list, uninstall
+        install     Install docker-bootapp as a Docker CLI plugin
+        completion  Generate shell completion (bash, zsh, fish, powershell)
+
+      Global Flags:
+        -f, --file   Compose file path (default: auto-detect)
 
       Environment Variables (in docker-compose.yml):
         DOMAIN=myapp.test                    # Single domain
         SSL_DOMAINS=app.test,api.test       # Multiple domains with SSL
-        DOMAINS=web.test,admin.test         # Multiple domains
+        DOMAINS=web.test,admin.test         # Multiple domains without SSL
 
       Platform-specific requirements:
         • macOS + Docker Desktop/Colima: docker-mac-net-connect recommended
