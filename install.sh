@@ -80,10 +80,11 @@ echo -e "${GREEN}✓ docker-bootapp installed successfully!${NC}"
 echo ""
 
 # Verify installation
-if docker bootapp --version &> /dev/null; then
-    echo "✓ Verified: $(docker bootapp --version)"
+if docker bootapp help &> /dev/null; then
+    echo "✓ Verified: docker-bootapp plugin installed"
 else
     echo -e "${YELLOW}Warning: Unable to verify installation${NC}"
+    echo "Try running: docker bootapp help"
 fi
 
 # macOS specific checks
