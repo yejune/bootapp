@@ -63,6 +63,12 @@ func Execute() {
 
 // ValidateSudo prompts for sudo password and caches credentials
 func ValidateSudo() error {
+	// Check if already running as root
+	if os.Geteuid() == 0 {
+		// Already running with sudo, no need to validate
+		return nil
+	}
+
 	fmt.Println("Checking sudo credentials...")
 	// sudo -v prompts for password if needed and extends the timeout
 	cmd := exec.Command("sudo", "-v")
