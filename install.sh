@@ -80,8 +80,10 @@ echo -e "${GREEN}✓ docker-bootapp installed successfully!${NC}"
 echo ""
 
 # Verify installation
-if docker bootapp help &> /dev/null; then
-    echo "✓ Verified: docker-bootapp plugin installed"
+echo "✓ Verifying installation..."
+if docker bootapp help > /dev/null 2>&1; then
+    echo ""
+    docker bootapp help
 else
     echo -e "${YELLOW}Warning: Unable to verify installation${NC}"
     echo "Try running: docker bootapp help"
