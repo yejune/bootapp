@@ -244,7 +244,35 @@ bootapp은 docker-mac-net-connect를 확인하고, 없으면 설치 안내를 �
 
 ## Linux
 
-추가 설정 불필요 - Docker 네트워킹이 기본적으로 작동합니다.
+✅ **모든 기능이 Linux에서 네이티브로 동작합니다!**
+
+Linux 지원 기능:
+
+1. **Docker 네트워킹**
+   - 컨테이너별 고유 subnet 할당
+   - Container IP 직접 접근 (추가 도구 불필요)
+
+2. **SSL 인증서 자동 생성 및 Trust**
+   - Debian/Ubuntu: `update-ca-certificates`
+   - RHEL/CentOS: `update-ca-trust`
+   - 자체 서명 인증서를 시스템 trust store에 자동 등록
+
+3. **/etc/hosts 자동 관리**
+   - 도메인 → Container IP 매핑
+   - 프로젝트별 자동 등록/제거
+
+4. **독립 실행 파일 + Docker 플러그인**
+   - `bootapp` 또는 `docker bootapp` 명령어 모두 사용 가능
+
+**설치 방법:**
+```bash
+# Go 필요
+bash install.sh
+# 또는
+make build install
+```
+
+macOS와 달리 Linux는 추가 네트워크 도구(`docker-mac-net-connect`) 없이 모든 기능이 즉시 동작합니다!
 
 ## 도메인 TLD 권장사항
 

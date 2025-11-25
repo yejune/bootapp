@@ -244,7 +244,35 @@ bootapp will check for docker-mac-net-connect and show installation instructions
 
 ## Linux
 
-No additional setup needed - Docker networking works natively.
+✅ **All features work natively on Linux!**
+
+Linux support includes:
+
+1. **Docker Networking**
+   - Unique subnet per container
+   - Direct container IP access (no additional tools needed)
+
+2. **SSL Certificate Auto-generation & Trust**
+   - Debian/Ubuntu: `update-ca-certificates`
+   - RHEL/CentOS: `update-ca-trust`
+   - Self-signed certificates automatically trusted system-wide
+
+3. **Automatic /etc/hosts Management**
+   - Domain → Container IP mapping
+   - Auto register/cleanup per project
+
+4. **Standalone Binary + Docker Plugin**
+   - Use `bootapp` or `docker bootapp` commands
+
+**Installation:**
+```bash
+# Requires Go
+bash install.sh
+# or
+make build install
+```
+
+Unlike macOS, Linux doesn't need additional network tools (`docker-mac-net-connect`) - everything works out of the box!
 
 ## Domain TLD Recommendations
 
