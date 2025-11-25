@@ -130,8 +130,8 @@ if [ "$OS_TYPE" = "macos" ]; then
         else
             echo "✓ docker-mac-net-connect is installed"
 
-            # Check if service is running
-            if brew services list | grep -q "docker-mac-net-connect.*started"; then
+            # Check if process is actually running (more reliable than brew services)
+            if pgrep -f docker-mac-net-connect > /dev/null 2>&1; then
                 echo "✓ docker-mac-net-connect service is running"
             else
                 echo -e "${YELLOW}⚠️  docker-mac-net-connect is installed but not running${NC}"

@@ -202,20 +202,10 @@ func checkMacOSDependencies() {
 
 	fmt.Println("✓ docker-mac-net-connect is installed")
 
-	// Check if service is running
-	cmd := exec.Command("brew", "services", "list")
-	output, err := cmd.Output()
-	if err != nil {
-		return
-	}
-
-	// Simple check - look for "docker-mac-net-connect" and "started" in output
-	outputStr := string(output)
-	if !contains(outputStr, "docker-mac-net-connect") {
-		return
-	}
-
-	if contains(outputStr, "started") {
+	// Check if process is actually running (more reliable than brew services)
+	cmd := exec.Command("pgrep", "-f", "docker-mac-net-connect")
+	err = cmd.Run()
+	if err == nil {
 		fmt.Println("✓ docker-mac-net-connect service is running")
 	} else {
 		fmt.Println("⚠️  docker-mac-net-connect is installed but not running")
