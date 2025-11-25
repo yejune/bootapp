@@ -1,5 +1,5 @@
 BINARY_NAME=docker-bootapp
-VERSION=1.0.0
+VERSION=1.0.1
 BUILD_DIR=build
 
 # Go parameters
@@ -10,7 +10,7 @@ GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
 
 # Build flags
-LDFLAGS=-ldflags "-s -w -X main.Version=$(VERSION)"
+LDFLAGS=-ldflags "-s -w -X github.com/yejune/docker-bootapp/cmd.Version=$(VERSION)"
 
 .PHONY: all build clean test deps install uninstall darwin linux
 

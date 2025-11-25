@@ -9,7 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var composeFile string
+var (
+	composeFile string
+	// Version is set at build time via -ldflags
+	Version = "dev"
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "bootapp",
@@ -19,6 +23,7 @@ and routing for multiple Docker Compose projects.
 
 Each project gets a unique subnet, and domains are automatically
 registered in /etc/hosts pointing to the container IP.`,
+	Version: Version,
 }
 
 func init() {
@@ -40,7 +45,7 @@ func Execute() {
 		metadata := pluginMetadata{
 			SchemaVersion:    "0.1.0",
 			Vendor:           "yejune",
-			Version:          "1.0.0",
+			Version:          Version,
 			ShortDescription: "Multi-project Docker networking made easy",
 			URL:              "https://github.com/yejune/docker-bootapp",
 		}
