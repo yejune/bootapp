@@ -1,6 +1,7 @@
 BINARY_NAME=docker-bootapp
-VERSION=1.0.1
+VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
 BUILD_DIR=build
+DIST_DIR=dist
 
 # Go parameters
 GOCMD=go
@@ -12,7 +13,7 @@ GOMOD=$(GOCMD) mod
 # Build flags
 LDFLAGS=-ldflags "-s -w -X github.com/yejune/docker-bootapp/cmd.Version=$(VERSION)"
 
-.PHONY: all build clean test deps install uninstall darwin linux
+.PHONY: all build build-cross clean test deps install uninstall darwin linux
 
 all: deps build
 
@@ -20,6 +21,14 @@ deps:
 	$(GOMOD) tidy
 
 build: darwin linux
+
+build-cross:
+	@mkdir -p $(DIST_DIR)
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 .
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 .
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 .
+	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 .
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe .
 
 darwin:
 	@echo "Building for macOS (darwin/amd64)..."
@@ -40,7 +49,7 @@ local:
 
 clean:
 	$(GOCLEAN)
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
 test:
 	$(GOTEST) -v ./...
