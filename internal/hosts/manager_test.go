@@ -20,10 +20,13 @@ func TestBuildEntry(t *testing.T) {
 	domain := "myapp.local"
 	projectName := "myproject"
 
-	// Build entry manually (same logic as AddEntry)
-	entry := ip + "\t" + domain + "\t" + marker + ":" + projectName
+	// Build entry manually (same logic as AddEntry - new macOS compatible format)
+	// Comment line followed by host entry
+	commentLine := marker + ":" + projectName
+	hostEntry := ip + "\t" + domain
+	entry := commentLine + "\n" + hostEntry
 
-	expected := "172.18.0.2\tmyapp.local\t## bootapp:myproject"
+	expected := "## bootapp:myproject\n172.18.0.2\tmyapp.local"
 	if entry != expected {
 		t.Errorf("entry = %q, want %q", entry, expected)
 	}
@@ -50,8 +53,9 @@ func TestBuildEntries(t *testing.T) {
 	}
 
 	projectName := "myproject"
+	commentLine := marker + ":" + projectName
 
-	// Build entries (same logic as AddEntries)
+	// Build entries (same logic as AddEntries - new format with comment on separate line)
 	var entries []string
 	for _, info := range containers {
 		if info.IP == "" || len(info.Domains) == 0 {
@@ -59,25 +63,31 @@ func TestBuildEntries(t *testing.T) {
 		}
 		for _, domain := range info.Domains {
 			if domain != "" {
-				entry := info.IP + "\t" + domain + "\t" + marker + ":" + projectName
-				entries = append(entries, entry)
+				// Add comment line first, then host entry
+				entries = append(entries, commentLine)
+				entries = append(entries, info.IP+"\t"+domain)
 			}
 		}
 	}
 
-	// Should have 3 entries (2 for app, 1 for api)
-	if len(entries) != 3 {
-		t.Errorf("entries count = %d, want 3", len(entries))
+	// Should have 6 entries (2 lines per domain: comment + host, 3 domains total)
+	if len(entries) != 6 {
+		t.Errorf("entries count = %d, want 6", len(entries))
 	}
 
-	// Verify each entry has correct format
-	for _, entry := range entries {
-		if !strings.Contains(entry, marker+":"+projectName) {
-			t.Errorf("entry %q missing marker", entry)
-		}
-		fields := strings.Fields(entry)
-		if len(fields) < 3 {
-			t.Errorf("entry %q has wrong format", entry)
+	// Verify format: alternating comment and host lines
+	for i, entry := range entries {
+		if i%2 == 0 {
+			// Comment line
+			if entry != commentLine {
+				t.Errorf("entry[%d] = %q, want comment line %q", i, entry, commentLine)
+			}
+		} else {
+			// Host line - should have IP and domain
+			fields := strings.Fields(entry)
+			if len(fields) != 2 {
+				t.Errorf("entry[%d] %q has wrong format, want 2 fields", i, entry)
+			}
 		}
 	}
 }
@@ -85,6 +95,7 @@ func TestBuildEntries(t *testing.T) {
 func TestBuildEntries_EmptyContainers(t *testing.T) {
 	containers := map[string]network.ContainerInfo{}
 	projectName := "myproject"
+	commentLine := marker + ":" + projectName
 
 	var entries []string
 	for _, info := range containers {
@@ -93,8 +104,8 @@ func TestBuildEntries_EmptyContainers(t *testing.T) {
 		}
 		for _, domain := range info.Domains {
 			if domain != "" {
-				entry := info.IP + "\t" + domain + "\t" + marker + ":" + projectName
-				entries = append(entries, entry)
+				entries = append(entries, commentLine)
+				entries = append(entries, info.IP+"\t"+domain)
 			}
 		}
 	}
@@ -112,6 +123,7 @@ func TestBuildEntries_SkipEmptyDomain(t *testing.T) {
 		},
 	}
 	projectName := "myproject"
+	commentLine := marker + ":" + projectName
 
 	var entries []string
 	for _, info := range containers {
@@ -121,25 +133,25 @@ func TestBuildEntries_SkipEmptyDomain(t *testing.T) {
 		for _, domain := range info.Domains {
 			domain = strings.TrimSpace(domain)
 			if domain != "" {
-				entry := info.IP + "\t" + domain + "\t" + marker + ":" + projectName
-				entries = append(entries, entry)
+				entries = append(entries, commentLine)
+				entries = append(entries, info.IP+"\t"+domain)
 			}
 		}
 	}
 
-	// Should only have 1 entry (skipping empty domains)
-	if len(entries) != 1 {
-		t.Errorf("entries count = %d, want 1", len(entries))
+	// Should only have 2 entries (1 comment + 1 host, skipping empty domains)
+	if len(entries) != 2 {
+		t.Errorf("entries count = %d, want 2", len(entries))
 	}
 }
 
 func TestSedPattern(t *testing.T) {
 	projectName := "myproject"
 
-	// Pattern for removing project entries
-	pattern := "/" + marker + ":" + projectName + "/d"
+	// Pattern for removing project entries (new format: delete comment line and next line)
+	pattern := "/" + marker + ":" + projectName + "/{N;d;}"
 
-	expected := "/## bootapp:myproject/d"
+	expected := "/## bootapp:myproject/{N;d;}"
 	if pattern != expected {
 		t.Errorf("pattern = %q, want %q", pattern, expected)
 	}
@@ -154,15 +166,22 @@ func TestParseHostsLine(t *testing.T) {
 		wantMarker bool
 	}{
 		{
-			"bootapp entry",
-			"172.18.0.2\tmyapp.local\t## bootapp:myproject",
-			"172.18.0.2",
-			"myapp.local",
+			"bootapp comment line (new format)",
+			"## bootapp:myproject",
+			"##",
+			"bootapp:myproject",
 			true,
 		},
 		{
-			"bootapp entry with spaces",
-			"172.18.0.2  myapp.local  ## bootapp:myproject",
+			"bootapp host entry (new format)",
+			"172.18.0.2\tmyapp.local",
+			"172.18.0.2",
+			"myapp.local",
+			false,
+		},
+		{
+			"legacy bootapp entry (old format)",
+			"172.18.0.2\tmyapp.local\t## bootapp:myproject",
 			"172.18.0.2",
 			"myapp.local",
 			true,
@@ -216,12 +235,16 @@ func TestParseHostsLine(t *testing.T) {
 }
 
 func TestFilterMarkedLines(t *testing.T) {
+	// New format: comment lines contain marker
 	lines := []string{
 		"127.0.0.1\tlocalhost",
-		"172.18.0.2\tmyapp.local\t## bootapp:myproject",
-		"172.18.0.3\tapi.local\t## bootapp:myproject",
+		"## bootapp:myproject",
+		"172.18.0.2\tmyapp.local",
+		"## bootapp:myproject",
+		"172.18.0.3\tapi.local",
 		"192.168.1.1\trouter.local",
-		"172.19.0.2\tother.local\t## bootapp:otherproject",
+		"## bootapp:otherproject",
+		"172.19.0.2\tother.local",
 	}
 
 	// Filter lines with our marker
@@ -238,10 +261,14 @@ func TestFilterMarkedLines(t *testing.T) {
 }
 
 func TestFilterByProject(t *testing.T) {
+	// New format: comment lines contain project marker
 	lines := []string{
-		"172.18.0.2\tmyapp.local\t## bootapp:myproject",
-		"172.18.0.3\tapi.local\t## bootapp:myproject",
-		"172.19.0.2\tother.local\t## bootapp:otherproject",
+		"## bootapp:myproject",
+		"172.18.0.2\tmyapp.local",
+		"## bootapp:myproject",
+		"172.18.0.3\tapi.local",
+		"## bootapp:otherproject",
+		"172.19.0.2\tother.local",
 	}
 
 	projectName := "myproject"
@@ -262,11 +289,14 @@ func TestFilterByProject(t *testing.T) {
 
 // TestListEntriesFromReader tests parsing hosts file content
 func TestListEntriesFromContent(t *testing.T) {
+	// New format: comment line followed by host entry
 	content := `127.0.0.1	localhost
 255.255.255.255	broadcasthost
 ::1             localhost
-172.18.0.2	myapp.local	## bootapp:myproject
-172.18.0.3	api.local	## bootapp:myproject
+## bootapp:myproject
+172.18.0.2	myapp.local
+## bootapp:myproject
+172.18.0.3	api.local
 # Some comment
 192.168.1.1	router.local
 `
@@ -286,18 +316,19 @@ func TestListEntriesFromContent(t *testing.T) {
 
 // TestGetIPFromLine extracts IP from hosts line
 func TestGetIPFromLine(t *testing.T) {
+	// New format: host line contains only IP and domain (no marker)
 	tests := []struct {
 		line   string
 		domain string
 		wantIP string
 	}{
 		{
-			"172.18.0.2\tmyapp.local\t## bootapp:myproject",
+			"172.18.0.2\tmyapp.local",
 			"myapp.local",
 			"172.18.0.2",
 		},
 		{
-			"172.18.0.3  api.local  ## bootapp:myproject",
+			"172.18.0.3  api.local",
 			"api.local",
 			"172.18.0.3",
 		},
@@ -326,8 +357,10 @@ func TestWithTempHostsFile(t *testing.T) {
 	}
 	defer os.Remove(tmpFile.Name())
 
+	// New format: comment line followed by host entry
 	content := `127.0.0.1	localhost
-172.18.0.2	myapp.local	## bootapp:myproject
+## bootapp:myproject
+172.18.0.2	myapp.local
 `
 	if _, err := tmpFile.WriteString(content); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
@@ -354,7 +387,8 @@ func TestWithTempHostsFile(t *testing.T) {
 }
 
 func TestEntryContainsDomain(t *testing.T) {
-	line := "172.18.0.2\tmyapp.local\t## bootapp:myproject"
+	// New format: host line without marker
+	line := "172.18.0.2\tmyapp.local"
 
 	tests := []struct {
 		domain string
