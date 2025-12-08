@@ -114,6 +114,15 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Extract hostnames per service (for container-to-container communication)
+	serviceHostnames := compose.ExtractServiceHostnames(composeData)
+	if len(serviceHostnames) > 0 {
+		fmt.Println("Service Hostnames (internal):")
+		for svc, hosts := range serviceHostnames {
+			fmt.Printf("  %s: %s\n", svc, strings.Join(hosts, ", "))
+		}
+	}
+
 	// Generate SSL certificates for SSL_DOMAINS only
 	certDir := filepath.Join(projectPath, "var", "certs")
 	var certsToTrust []string
@@ -257,6 +266,15 @@ func runUp(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s: %s -> %s\n", name, strings.Join(info.Domains, ", "), info.IP)
 		} else {
 			fmt.Printf("  %s: %s (no domain)\n", name, info.IP)
+		}
+	}
+
+	// Setup network aliases for hostnames (container-to-container)
+	if len(serviceHostnames) > 0 {
+		fmt.Println("\nSetting up network aliases...")
+		networkName := projectName + "_default"
+		if err := setupNetworkAliases(projectName, networkName, serviceHostnames); err != nil {
+			fmt.Printf("Warning: Failed to setup network aliases: %v\n", err)
 		}
 	}
 
@@ -671,4 +689,62 @@ func collectAllDomains(serviceDomains map[string][]string) []string {
 		result = append(result, d)
 	}
 	return result
+}
+
+// setupNetworkAliases adds network aliases for container-to-container communication
+// This allows containers to reach each other using hostnames defined in HOSTNAME/HOSTNAMES
+func setupNetworkAliases(projectName, networkName string, serviceHostnames map[string][]string) error {
+	// Get container IDs for each service
+	for serviceName, hostnames := range serviceHostnames {
+		if len(hostnames) == 0 {
+			continue
+		}
+
+		// Get container ID for this service
+		containerID, err := getContainerID(projectName, serviceName)
+		if err != nil {
+			fmt.Printf("  ⚠️  %s: container not found\n", serviceName)
+			continue
+		}
+
+		// Disconnect and reconnect with aliases
+		// First disconnect from network
+		disconnectCmd := exec.Command("docker", "network", "disconnect", networkName, containerID)
+		disconnectCmd.Run() // Ignore error if not connected
+
+		// Reconnect with aliases
+		args := []string{"network", "connect"}
+		for _, hostname := range hostnames {
+			args = append(args, "--alias", hostname)
+		}
+		args = append(args, networkName, containerID)
+
+		connectCmd := exec.Command("docker", args...)
+		if err := connectCmd.Run(); err != nil {
+			fmt.Printf("  ⚠️  %s: failed to set aliases\n", serviceName)
+			continue
+		}
+
+		fmt.Printf("  ✓ %s: %s\n", serviceName, strings.Join(hostnames, ", "))
+	}
+
+	return nil
+}
+
+// getContainerID returns the container ID for a service in a project
+func getContainerID(projectName, serviceName string) (string, error) {
+	cmd := exec.Command("docker", "ps", "-q",
+		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", projectName),
+		"--filter", fmt.Sprintf("label=com.docker.compose.service=%s", serviceName))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	containerID := strings.TrimSpace(string(output))
+	if containerID == "" {
+		return "", fmt.Errorf("container not found")
+	}
+
+	return containerID, nil
 }
