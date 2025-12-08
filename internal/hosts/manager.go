@@ -26,6 +26,22 @@ func AddEntries(containers map[string]network.ContainerInfo, projectName string)
 		// Ignore error if no entries exist
 	}
 
+	// Collect all domains we're going to manage
+	var allDomains []string
+	for _, info := range containers {
+		if info.IP == "" || len(info.Domains) == 0 {
+			continue
+		}
+		allDomains = append(allDomains, info.Domains...)
+	}
+
+	// Comment out existing entries for these domains (non-bootapp entries)
+	if len(allDomains) > 0 {
+		if err := commentOutDomains(allDomains); err != nil {
+			fmt.Printf("  Warning: failed to comment out existing entries: %v\n", err)
+		}
+	}
+
 	// Build all entries (comment line + host entry for each domain)
 	var entries []string
 	commentLine := fmt.Sprintf("%s:%s", marker, projectName)
@@ -55,6 +71,50 @@ func AddEntries(containers map[string]network.ContainerInfo, projectName string)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	return cmd.Run()
+}
+
+// commentOutDomains comments out existing non-bootapp entries for the given domains
+func commentOutDomains(domains []string) error {
+	// Read current hosts file
+	data, err := os.ReadFile(hostsFile)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	modified := false
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip empty lines, comments, and bootapp-managed lines
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.Contains(line, marker) {
+			continue
+		}
+
+		// Check if this line contains any of our domains
+		for _, domain := range domains {
+			// Match domain as a whole word (not substring)
+			fields := strings.Fields(line)
+			for _, field := range fields[1:] { // Skip IP field
+				if field == domain {
+					// Comment out this line with inline comment
+					lines[i] = "#" + line + " # bootapp"
+					modified = true
+					fmt.Printf("  (commented out: %s)\n", strings.TrimSpace(line))
+					break
+				}
+			}
+		}
+	}
+
+	if !modified {
+		return nil
+	}
+
+	// Write back
+	content := strings.Join(lines, "\n")
+	cmd := exec.Command("sudo", "sh", "-c", fmt.Sprintf("cat > %s << 'BOOTAPP_EOF'\n%s\nBOOTAPP_EOF", hostsFile, content))
 	return cmd.Run()
 }
 
