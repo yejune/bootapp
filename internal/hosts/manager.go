@@ -153,6 +153,7 @@ func EntryExists(domain string) (bool, error) {
 }
 
 // ListEntries returns all bootapp-managed entries
+// Format: "IP DOMAIN (project)"
 func ListEntries() ([]string, error) {
 	file, err := os.Open(hostsFile)
 	if err != nil {
@@ -161,11 +162,26 @@ func ListEntries() ([]string, error) {
 	defer file.Close()
 
 	var entries []string
+	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, marker) {
-			entries = append(entries, line)
+		lines = append(lines, scanner.Text())
+	}
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		if strings.Contains(line, marker) && strings.HasPrefix(strings.TrimSpace(line), "##") {
+			// Comment line, next line is host entry
+			if i+1 < len(lines) {
+				hostLine := lines[i+1]
+				fields := strings.Fields(hostLine)
+				if len(fields) >= 2 {
+					project := strings.TrimPrefix(line, marker+":")
+					project = strings.TrimSpace(project)
+					entries = append(entries, fmt.Sprintf("%s\t%s\t(%s)", fields[0], fields[1], project))
+				}
+				i++ // Skip next line
+			}
 		}
 	}
 
