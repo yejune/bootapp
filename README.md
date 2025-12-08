@@ -132,12 +132,18 @@ docker bootapp ls
 
 ### Supported Environment Variables
 
-All of these environment variables are used (duplicates removed, each supports single, comma, or newline separated values):
+All of these environment variables are used (duplicates removed, each supports single, comma, space, or newline separated values):
+
+**For host machine access (/etc/hosts):**
 - `DOMAIN`
 - `DOMAINS`
 - `SSL_DOMAINS`
 - `APP_DOMAIN`
 - `VIRTUAL_HOST` (nginx-proxy compatible)
+
+**For container-to-container access (network aliases):**
+- `HOSTNAME`
+- `HOSTNAMES`
 
 ```yaml
 services:
@@ -148,15 +154,36 @@ services:
         myapp.local
         www.myapp.local
 
-  mysql:
+  db:
     image: mysql:8
     environment:
-      DOMAIN: mysql.myapp.local
+      DOMAIN: mysql.myapp.local          # Host machine -> container
+      HOSTNAMES: db.local db-backup.local # Container -> container
 
   redis:
     image: redis
     # No DOMAIN = no /etc/hosts entry (IP only)
 ```
+
+### Container-to-Container Communication
+
+Use `HOSTNAME` or `HOSTNAMES` to allow containers to reach each other by hostname:
+
+```yaml
+services:
+  db:
+    image: mariadb
+    environment:
+      HOSTNAMES: db.local db-delivery.local
+
+  api:
+    image: nginx
+    environment:
+      HOSTNAME: api.local
+    # api can now reach db via: db.local or db-delivery.local
+```
+
+This replaces the deprecated `external_links` and works automatically with Docker's built-in DNS.
 
 ### Traefik Labels
 
@@ -179,9 +206,12 @@ services:
 Only services with explicit domain configuration get /etc/hosts entries:
 
 ```
-172.18.0.2    myapp.local        ## bootapp:myproject
-172.18.0.2    www.myapp.local    ## bootapp:myproject
-172.18.0.3    mysql.myapp.local  ## bootapp:myproject
+## bootapp:myproject
+172.18.0.2    myapp.local
+## bootapp:myproject
+172.18.0.2    www.myapp.local
+## bootapp:myproject
+172.18.0.3    mysql.myapp.local
 ```
 
 Services without DOMAIN config (like redis above) are not added to /etc/hosts.
