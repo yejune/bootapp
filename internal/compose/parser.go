@@ -221,7 +221,7 @@ func extractDomainsFromEnvironment(env interface{}) []string {
 	var domains []string
 
 	// Environment variable keys to check (in priority order)
-	envKeys := []string{"DOMAIN", "DOMAINS", "SSL_DOMAINS", "APP_DOMAIN", "VIRTUAL_HOST"}
+	envKeys := []string{"DOMAIN", "DOMAINS", "SSL_DOMAIN", "SSL_DOMAINS", "APP_DOMAIN", "VIRTUAL_HOST"}
 
 	switch e := env.(type) {
 	case []interface{}:
@@ -288,24 +288,30 @@ func ExtractSSLDomains(compose *ComposeFile) []string {
 	return uniqueDomains(allDomains)
 }
 
-// extractSSLDomainsFromEnvironment extracts only SSL_DOMAINS from environment
+// extractSSLDomainsFromEnvironment extracts SSL_DOMAIN/SSL_DOMAINS from environment
 func extractSSLDomainsFromEnvironment(env interface{}) []string {
 	var domains []string
+
+	envKeys := []string{"SSL_DOMAIN", "SSL_DOMAINS"}
 
 	switch e := env.(type) {
 	case []interface{}:
 		for _, item := range e {
 			if str, ok := item.(string); ok {
-				prefix := "SSL_DOMAINS="
-				if strings.HasPrefix(str, prefix) {
-					value := strings.TrimPrefix(str, prefix)
-					domains = append(domains, splitDomains(value)...)
+				for _, key := range envKeys {
+					prefix := key + "="
+					if strings.HasPrefix(str, prefix) {
+						value := strings.TrimPrefix(str, prefix)
+						domains = append(domains, splitDomains(value)...)
+					}
 				}
 			}
 		}
 	case map[string]interface{}:
-		if value, ok := e["SSL_DOMAINS"].(string); ok {
-			domains = append(domains, splitDomains(value)...)
+		for _, key := range envKeys {
+			if value, ok := e[key].(string); ok {
+				domains = append(domains, splitDomains(value)...)
+			}
 		}
 	}
 
