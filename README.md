@@ -132,18 +132,16 @@ docker bootapp ls
 
 ### Supported Environment Variables
 
-All of these environment variables are used (duplicates removed, each supports single, comma, space, or newline separated values):
+All of these environment variables are used for both:
+- **Host machine access** (/etc/hosts)
+- **Container-to-container access** (Docker network aliases)
 
-**For host machine access (/etc/hosts):**
+Supported variables (duplicates removed, each supports single, comma, space, or newline separated values):
 - `DOMAIN`
 - `DOMAINS`
 - `SSL_DOMAINS`
 - `APP_DOMAIN`
 - `VIRTUAL_HOST` (nginx-proxy compatible)
-
-**For container-to-container access (network aliases):**
-- `HOSTNAME`
-- `HOSTNAMES`
 
 ```yaml
 services:
@@ -157,8 +155,7 @@ services:
   db:
     image: mysql:8
     environment:
-      DOMAIN: mysql.myapp.local          # Host machine -> container
-      HOSTNAMES: db.local db-backup.local # Container -> container
+      DOMAIN: db.local db-backup.local
 
   redis:
     image: redis
@@ -167,20 +164,21 @@ services:
 
 ### Container-to-Container Communication
 
-Use `HOSTNAME` or `HOSTNAMES` to allow containers to reach each other by hostname:
+Domains set via `DOMAIN`/`DOMAINS` are automatically registered as Docker network aliases, allowing containers to reach each other:
 
 ```yaml
 services:
   db:
     image: mariadb
     environment:
-      HOSTNAMES: db.local db-delivery.local
+      DOMAIN: db.local db-delivery.local
 
   api:
     image: nginx
     environment:
-      HOSTNAME: api.local
-    # api can now reach db via: db.local or db-delivery.local
+      DOMAIN: api.local
+    # api can reach db via: db.local or db-delivery.local
+    # db can reach api via: api.local
 ```
 
 This replaces the deprecated `external_links` and works automatically with Docker's built-in DNS.

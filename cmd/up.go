@@ -114,15 +114,6 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Extract hostnames per service (for container-to-container communication)
-	serviceHostnames := compose.ExtractServiceHostnames(composeData)
-	if len(serviceHostnames) > 0 {
-		fmt.Println("Service Hostnames (internal):")
-		for svc, hosts := range serviceHostnames {
-			fmt.Printf("  %s: %s\n", svc, strings.Join(hosts, ", "))
-		}
-	}
-
 	// Generate SSL certificates for SSL_DOMAINS only
 	certDir := filepath.Join(projectPath, "var", "certs")
 	var certsToTrust []string
@@ -269,11 +260,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Setup network aliases for hostnames (container-to-container)
-	if len(serviceHostnames) > 0 {
+	// Setup network aliases for domains (container-to-container communication)
+	if len(serviceDomains) > 0 {
 		fmt.Println("\nSetting up network aliases...")
 		networkName := projectName + "_default"
-		if err := setupNetworkAliases(projectName, networkName, serviceHostnames); err != nil {
+		if err := setupNetworkAliases(projectName, networkName, serviceDomains); err != nil {
 			fmt.Printf("Warning: Failed to setup network aliases: %v\n", err)
 		}
 	}

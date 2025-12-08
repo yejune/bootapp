@@ -217,51 +217,6 @@ func ExtractServiceDomains(compose *ComposeFile) map[string][]string {
 	return result
 }
 
-// ExtractServiceHostnames extracts hostnames per service for container-to-container communication
-// Returns map[serviceName][]hostnames
-// Supports HOSTNAME and HOSTNAMES environment variables (space-separated)
-func ExtractServiceHostnames(compose *ComposeFile) map[string][]string {
-	result := make(map[string][]string)
-
-	for serviceName, service := range compose.Services {
-		hostnames := extractHostnamesFromEnvironment(service.Environment)
-		if len(hostnames) > 0 {
-			result[serviceName] = uniqueDomains(hostnames)
-		}
-	}
-
-	return result
-}
-
-func extractHostnamesFromEnvironment(env interface{}) []string {
-	var hostnames []string
-
-	envKeys := []string{"HOSTNAME", "HOSTNAMES"}
-
-	switch e := env.(type) {
-	case []interface{}:
-		for _, item := range e {
-			if str, ok := item.(string); ok {
-				for _, key := range envKeys {
-					prefix := key + "="
-					if strings.HasPrefix(str, prefix) {
-						value := strings.TrimPrefix(str, prefix)
-						hostnames = append(hostnames, splitDomains(value)...)
-					}
-				}
-			}
-		}
-	case map[string]interface{}:
-		for _, key := range envKeys {
-			if value, ok := e[key].(string); ok {
-				hostnames = append(hostnames, splitDomains(value)...)
-			}
-		}
-	}
-
-	return hostnames
-}
-
 func extractDomainsFromEnvironment(env interface{}) []string {
 	var domains []string
 
