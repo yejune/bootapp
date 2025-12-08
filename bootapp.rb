@@ -1,8 +1,8 @@
 class Bootapp < Formula
   desc "Docker Compose multi-project manager with automatic networking, /etc/hosts, and SSL certificates"
   homepage "https://github.com/yejune/bootapp"
-  url "https://github.com/yejune/bootapp/archive/refs/tags/v1.0.10.tar.gz"
-  sha256 "9fae06f5b92a3761f40818447b6508c94e262525ebc4a1ebaa33d0546bda00c3"
+  url "https://github.com/yejune/bootapp/archive/refs/tags/v1.0.11.tar.gz"
+  sha256 "59e71cfe93b27176bc082f5c1f3a5511d282588b0f457780d24a21a996a1c4bd"
   license "MIT"
   head "https://github.com/yejune/bootapp.git", branch: "main"
 

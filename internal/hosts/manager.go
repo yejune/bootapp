@@ -98,10 +98,10 @@ func commentOutDomains(domains []string) error {
 			fields := strings.Fields(line)
 			for _, field := range fields[1:] { // Skip IP field
 				if field == domain {
-					// Comment out this line with inline comment
-					lines[i] = "#" + line + " # bootapp"
+					// Comment out this line with inline comment including line number
+					lines[i] = fmt.Sprintf("#%s # bootapp:%d", line, i+1)
 					modified = true
-					fmt.Printf("  (commented out: %s)\n", strings.TrimSpace(line))
+					fmt.Printf("  (commented out line %d: %s)\n", i+1, strings.TrimSpace(line))
 					break
 				}
 			}
