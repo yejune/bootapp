@@ -102,7 +102,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	// Get project info
 	projectPath := filepath.Dir(composePath)
-	projectName := compose.GetProjectName(composePath)
+	projectName := compose.GetProjectName(composePath, composeData)
 	fmt.Printf("Project: %s\n", projectName)
 
 	// Extract domains per service from compose file

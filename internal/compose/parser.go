@@ -11,6 +11,7 @@ import (
 
 // ComposeFile represents a docker-compose.yml structure
 type ComposeFile struct {
+	Name     string                 `yaml:"name"`
 	Version  string                 `yaml:"version"`
 	Services map[string]Service     `yaml:"services"`
 	Networks map[string]Network     `yaml:"networks"`
@@ -123,10 +124,15 @@ func ParseComposeFile(path string) (*ComposeFile, error) {
 	return &compose, nil
 }
 
-// GetProjectName derives project name from compose file path
-func GetProjectName(composePath string) string {
+// GetProjectName derives project name from compose file or directory
+func GetProjectName(composePath string, compose *ComposeFile) string {
+	// Use name from compose file if specified
+	if compose != nil && compose.Name != "" {
+		return compose.Name
+	}
+	// Fallback to directory name (lowercased for Docker compatibility)
 	dir := filepath.Dir(composePath)
-	return filepath.Base(dir)
+	return strings.ToLower(filepath.Base(dir))
 }
 
 // ValidateForBootapp checks if compose file is compatible with bootapp

@@ -79,8 +79,14 @@ func runDown(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Using compose file: %s\n", composePath)
 
+	// Parse compose file for project name
+	composeData, err := compose.ParseComposeFile(composePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse compose file: %w", err)
+	}
+
 	// Get project info
-	projectName := compose.GetProjectName(composePath)
+	projectName := compose.GetProjectName(composePath, composeData)
 	fmt.Printf("Project: %s\n", projectName)
 
 	// Initialize project manager

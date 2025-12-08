@@ -10,17 +10,20 @@ func TestGetProjectName(t *testing.T) {
 	tests := []struct {
 		name        string
 		composePath string
+		compose     *ComposeFile
 		expected    string
 	}{
-		{"simple path", "/home/user/myproject/docker-compose.yml", "myproject"},
-		{"nested path", "/var/www/apps/webapp/docker-compose.yml", "webapp"},
-		{"current dir", "./docker-compose.yml", "."},
-		{"compose.yaml", "/projects/api/compose.yaml", "api"},
+		{"from compose name", "/home/user/MyProject/docker-compose.yml", &ComposeFile{Name: "myproject"}, "myproject"},
+		{"fallback to dir lowercase", "/home/user/MyProject/docker-compose.yml", nil, "myproject"},
+		{"simple path", "/home/user/myproject/docker-compose.yml", nil, "myproject"},
+		{"nested path", "/var/www/apps/webapp/docker-compose.yml", nil, "webapp"},
+		{"current dir", "./docker-compose.yml", nil, "."},
+		{"compose.yaml", "/projects/api/compose.yaml", nil, "api"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GetProjectName(tt.composePath)
+			result := GetProjectName(tt.composePath, tt.compose)
 			if result != tt.expected {
 				t.Errorf("GetProjectName(%q) = %q, want %q", tt.composePath, result, tt.expected)
 			}
