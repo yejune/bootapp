@@ -1,4 +1,5 @@
-BINARY_NAME=docker-bootapp
+BINARY_NAME=bootapp
+PLUGIN_NAME=docker-bootapp
 VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
 BUILD_DIR=build
 DIST_DIR=dist
@@ -60,30 +61,30 @@ install:
 	@mkdir -p ~/.docker/cli-plugins
 	@if [ "$$(uname -s)" = "Darwin" ]; then \
 		if [ "$$(uname -m)" = "arm64" ]; then \
-			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ~/.docker/cli-plugins/$(PLUGIN_NAME); \
 			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 /usr/local/bin/bootapp; \
 		else \
-			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ~/.docker/cli-plugins/$(PLUGIN_NAME); \
 			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 /usr/local/bin/bootapp; \
 		fi; \
 	elif [ "$$(uname -s)" = "Linux" ]; then \
 		if [ "$$(uname -m)" = "aarch64" ]; then \
-			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ~/.docker/cli-plugins/$(PLUGIN_NAME); \
 			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 /usr/local/bin/bootapp; \
 		else \
-			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ~/.docker/cli-plugins/$(BINARY_NAME); \
+			cp $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ~/.docker/cli-plugins/$(PLUGIN_NAME); \
 			sudo cp $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 /usr/local/bin/bootapp; \
 		fi; \
 	fi
-	@chmod +x ~/.docker/cli-plugins/$(BINARY_NAME)
+	@chmod +x ~/.docker/cli-plugins/$(PLUGIN_NAME)
 	@sudo chmod +x /usr/local/bin/bootapp
-	@echo "✓ Installed to ~/.docker/cli-plugins/$(BINARY_NAME)"
+	@echo "✓ Installed to ~/.docker/cli-plugins/$(PLUGIN_NAME)"
 	@echo "✓ Installed to /usr/local/bin/bootapp"
 	@echo "You can use: 'docker bootapp' or 'bootapp'"
 
 uninstall:
 	@echo "Uninstalling Docker CLI plugin and standalone binary..."
-	rm -f ~/.docker/cli-plugins/$(BINARY_NAME)
+	rm -f ~/.docker/cli-plugins/$(PLUGIN_NAME)
 	sudo rm -f /usr/local/bin/bootapp
 	@echo "Uninstalled"
 
