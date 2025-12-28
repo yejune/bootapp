@@ -12,7 +12,7 @@ GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
 
 # Build flags
-LDFLAGS=-ldflags "-s -w -X github.com/yejune/docker-bootapp/cmd.Version=$(VERSION)"
+LDFLAGS=-ldflags "-s -w -X github.com/yejune/bootapp/cmd.Version=$(VERSION)"
 
 .PHONY: all build build-cross clean test deps install uninstall darwin linux
 
