@@ -1,15 +1,16 @@
 class Bootapp < Formula
   desc "Docker Compose multi-project manager with automatic networking, /etc/hosts, and SSL certificates"
   homepage "https://github.com/yejune/bootapp"
-  url "https://github.com/yejune/bootapp/archive/refs/tags/v1.0.16.tar.gz"
-  sha256 "7ee78ced787208bc822421a7e5db9fc612e8816360e9aa3f38deedd233550523"
+  url "https://github.com/yejune/bootapp/archive/refs/tags/v1.0.17.tar.gz"
+  sha256 "1b3534d910da24d64f6ac7a3a688e6d1ca8375b71ce65f2381173ccfeef86c4d"
   license "MIT"
   head "https://github.com/yejune/bootapp.git", branch: "main"
 
   depends_on "go" => :build
 
   def install
-        system "go", "build", *std_go_args(output: bin/"bootapp"), "."
+        ldflags = "-s -w -X github.com/yejune/bootapp/cmd.Version=#{version}"
+    system "go", "build", *std_go_args(ldflags:, output: bin/"bootapp"), "."
 
     # Install to Docker CLI plugins directory (must be docker-<name> format)
     docker_plugins = "#{ENV["HOME"]}/.docker/cli-plugins"
