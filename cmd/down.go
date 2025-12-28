@@ -21,12 +21,19 @@ var (
 )
 
 var downCmd = &cobra.Command{
-	Use:   "down",
+	Use:   "down [service...]",
 	Short: "Stop and remove containers",
 	Long: `Stop containers using docker-compose and optionally:
 - Remove /etc/hosts entries
 - Remove routing (macOS only)
-- Remove project from global config`,
+- Remove project from global config
+
+Examples:
+  bootapp down           # Stop all services
+  bootapp down web       # Stop only 'web' service
+  bootapp down web api   # Stop 'web' and 'api' services
+
+Note: When stopping individual services, /etc/hosts entries are preserved.`,
 	RunE: runDown,
 }
 
@@ -98,14 +105,24 @@ func runDown(cmd *cobra.Command, args []string) error {
 	// Get project info for subnet
 	projectInfo, hasProject := projectMgr.GetProject(projectName)
 
-	// Run docker-compose down
-	fmt.Println("\nStopping containers...")
-	if err := runDockerComposeDown(composePath, projectName); err != nil {
-		return err
+	// Check if stopping individual services
+	stoppingIndividual := len(args) > 0
+
+	// Run docker-compose down/stop
+	if stoppingIndividual {
+		fmt.Printf("\nStopping services: %v\n", args)
+		if err := runDockerComposeStop(composePath, projectName, args); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("\nStopping containers...")
+		if err := runDockerComposeDown(composePath, projectName); err != nil {
+			return err
+		}
 	}
 
-	// Remove /etc/hosts entries
-	if !keepHosts {
+	// Remove /etc/hosts entries (only when stopping all services)
+	if !keepHosts && !stoppingIndividual {
 		fmt.Println("\nCleaning up /etc/hosts...")
 		if err := hosts.RemoveProjectEntries(projectName); err != nil {
 			fmt.Printf("Warning: Failed to clean /etc/hosts: %v\n", err)
@@ -114,16 +131,16 @@ func runDown(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Remove route (macOS only) - use subnet from global config
-	if hasProject {
+	// Remove route (macOS only) - only when stopping all services
+	if hasProject && !stoppingIndividual {
 		fmt.Println("\nCleaning up routing...")
 		if err := route.RemoveRoute(projectInfo.Subnet); err != nil {
 			fmt.Printf("Warning: Failed to remove route: %v\n", err)
 		}
 	}
 
-	// Remove config if requested
-	if removeConfig {
+	// Remove config if requested (only when stopping all services)
+	if removeConfig && !stoppingIndividual {
 		fmt.Println("\nRemoving project configuration...")
 		if err := projectMgr.RemoveProject(projectName); err != nil {
 			fmt.Printf("Warning: Failed to remove project config: %v\n", err)
@@ -132,7 +149,11 @@ func runDown(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println("\n✅ Containers stopped")
+	if stoppingIndividual {
+		fmt.Println("\n✅ Services stopped")
+	} else {
+		fmt.Println("\n✅ Containers stopped")
+	}
 	fmt.Println("\n📁 Configuration: ~/.bootapp/projects.json")
 
 	return nil
@@ -148,6 +169,20 @@ func runDockerComposeDown(composePath, projectName string) error {
 	if removeOrphans {
 		args = append(args, "--remove-orphans")
 	}
+
+	cmd := exec.Command("docker", args...)
+	cmd.Dir = filepath.Dir(composePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func runDockerComposeStop(composePath, projectName string, services []string) error {
+	// Use "docker compose stop" for individual services (preserves containers)
+	args := []string{"compose", "-f", composePath, "-p", projectName, "stop"}
+	args = append(args, services...)
 
 	cmd := exec.Command("docker", args...)
 	cmd.Dir = filepath.Dir(composePath)

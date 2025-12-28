@@ -26,7 +26,7 @@ var (
 )
 
 var upCmd = &cobra.Command{
-	Use:   "up",
+	Use:   "up [service...]",
 	Short: "Create and start containers with network setup",
 	Long: `Start containers using docker-compose and automatically:
 - Allocate unique subnet for the project
@@ -239,8 +239,12 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run docker-compose up (force recreate if certs were newly generated or --force-recreate)
-	fmt.Println("\nStarting containers...")
-	if err := runDockerCompose(composePath, projectName, forceRecreate || certsGenerated); err != nil {
+	if len(args) > 0 {
+		fmt.Printf("\nStarting services: %v\n", args)
+	} else {
+		fmt.Println("\nStarting containers...")
+	}
+	if err := runDockerCompose(composePath, projectName, forceRecreate || certsGenerated, args); err != nil {
 		return err
 	}
 
@@ -363,7 +367,7 @@ func createDockerNetwork(name, subnet string) error {
 	return cmd.Run()
 }
 
-func runDockerCompose(composePath, projectName string, forceRecreate bool) error {
+func runDockerCompose(composePath, projectName string, forceRecreate bool, services []string) error {
 	// Use "docker compose" (V2) instead of "docker-compose"
 	args := []string{"compose", "-f", composePath, "-p", projectName, "up"}
 
@@ -378,6 +382,11 @@ func runDockerCompose(composePath, projectName string, forceRecreate bool) error
 	}
 	if forceRecreate {
 		args = append(args, "--force-recreate")
+	}
+
+	// Add specific services if provided
+	if len(services) > 0 {
+		args = append(args, services...)
 	}
 
 	cmd := exec.Command("docker", args...)
