@@ -9,7 +9,8 @@ class Bootapp < Formula
   depends_on "go" => :build
 
   def install
-        system "go", "build", *std_go_args(output: bin/"bootapp"), "."
+    ldflags = "-s -w -X github.com/yejune/bootapp/cmd.Version=#{version}"
+    system "go", "build", *std_go_args(ldflags:, output: bin/"bootapp"), "."
 
     # Install to Docker CLI plugins directory (must be docker-<name> format)
     docker_plugins = "#{ENV["HOME"]}/.docker/cli-plugins"
