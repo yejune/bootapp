@@ -230,6 +230,14 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Set HOST_IP environment variable for docker-compose
+	if os.Getenv("HOST_IP") == "" {
+		if hostIP := getHostIP(); hostIP != "" {
+			os.Setenv("HOST_IP", hostIP)
+			fmt.Printf("HOST_IP: %s\n", hostIP)
+		}
+	}
+
 	// Run docker-compose up (force recreate if certs were newly generated or --force-recreate)
 	fmt.Println("\nStarting containers...")
 	if err := runDockerCompose(composePath, projectName, forceRecreate || certsGenerated); err != nil {
@@ -738,4 +746,48 @@ func getContainerID(projectName, serviceName string) (string, error) {
 	}
 
 	return containerID, nil
+}
+
+// getHostIP returns the host machine's IP address
+func getHostIP() string {
+	// Try common interfaces for macOS (en0) and Linux (eth0, wlan0)
+	interfaces := []string{"en0", "en1", "eth0", "wlan0"}
+
+	for _, iface := range interfaces {
+		var cmd *exec.Cmd
+		if _, err := exec.LookPath("ipconfig"); err == nil {
+			// macOS
+			cmd = exec.Command("ipconfig", "getifaddr", iface)
+		} else {
+			// Linux - use ip command
+			cmd = exec.Command("ip", "-4", "addr", "show", iface)
+		}
+
+		output, err := cmd.Output()
+		if err != nil {
+			continue
+		}
+
+		ip := strings.TrimSpace(string(output))
+		if ip != "" && !strings.HasPrefix(ip, "127.") {
+			// For Linux, parse the ip command output
+			if strings.Contains(ip, "inet ") {
+				lines := strings.Split(ip, "\n")
+				for _, line := range lines {
+					if strings.Contains(line, "inet ") {
+						fields := strings.Fields(line)
+						for i, f := range fields {
+							if f == "inet" && i+1 < len(fields) {
+								ip = strings.Split(fields[i+1], "/")[0]
+								return ip
+							}
+						}
+					}
+				}
+			}
+			return ip
+		}
+	}
+
+	return ""
 }

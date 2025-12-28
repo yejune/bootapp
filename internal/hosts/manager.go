@@ -43,6 +43,7 @@ func AddEntries(containers map[string]network.ContainerInfo, projectName string)
 	}
 
 	// Build all entries (comment line + host entry for each domain)
+	// Add both IPv4 and IPv6 (IPv4-mapped) to prevent IPv6 DNS bypass
 	var entries []string
 	commentLine := fmt.Sprintf("%s:%s", marker, projectName)
 	for _, info := range containers {
@@ -51,10 +52,14 @@ func AddEntries(containers map[string]network.ContainerInfo, projectName string)
 		}
 		for _, domain := range info.Domains {
 			if domain != "" {
-				// Add comment line first, then host entry
+				// IPv6 (IPv4-mapped address) - prevents macOS IPv6 DNS bypass
+				ipv6 := "::ffff:" + info.IP
+				entries = append(entries, commentLine)
+				entries = append(entries, fmt.Sprintf("%s\t%s", ipv6, domain))
+				// IPv4
 				entries = append(entries, commentLine)
 				entries = append(entries, fmt.Sprintf("%s\t%s", info.IP, domain))
-				fmt.Printf("  %s -> %s\n", domain, info.IP)
+				fmt.Printf("  %s -> %s (+ %s)\n", domain, info.IP, ipv6)
 			}
 		}
 	}
