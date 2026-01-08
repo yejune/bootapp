@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -23,7 +25,8 @@ and routing for multiple Docker Compose projects.
 
 Each project gets a unique subnet, and domains are automatically
 registered in /etc/hosts pointing to the container IP.`,
-	Version: Version,
+	Version:          Version,
+	PersistentPreRun: checkMultipleInstallations,
 }
 
 func init() {
@@ -122,4 +125,71 @@ func ValidateSudo() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// checkMultipleInstallations detects multiple bootapp installations in PATH
+func checkMultipleInstallations(cmd *cobra.Command, args []string) {
+	// Get current executable path
+	exePath, err := os.Executable()
+	if err != nil {
+		return
+	}
+
+	currentPath, err := filepath.EvalSymlinks(exePath)
+	if err != nil {
+		currentPath = exePath
+	}
+
+	// Find all installations in PATH
+	whichCmd := exec.Command("which", "-a", "bootapp")
+	output, err := whichCmd.Output()
+	if err != nil {
+		return
+	}
+
+	paths := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	// Resolve symlinks and collect unique paths
+	var resolvedPaths []string
+	seen := make(map[string]bool)
+	currentInPath := false
+
+	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+		resolved, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			resolved = path
+		}
+		if !seen[resolved] {
+			resolvedPaths = append(resolvedPaths, resolved)
+			seen[resolved] = true
+		}
+		if resolved == currentPath {
+			currentInPath = true
+		}
+	}
+
+	// Only warn if:
+	// 1. Multiple installations in PATH
+	// 2. Current executable is in PATH (not running from dev directory)
+	if len(resolvedPaths) > 1 && currentInPath {
+		fmt.Println("⚠️  Warning: Multiple bootapp installations detected!")
+		for _, path := range resolvedPaths {
+			installType := "direct"
+			if strings.Contains(path, "homebrew") || strings.Contains(path, "/Cellar/") {
+				installType = "Homebrew"
+			}
+			marker := "  "
+			if path == currentPath {
+				marker = "▸ "
+			}
+			fmt.Printf("%s %s (%s)\n", marker, path, installType)
+		}
+		fmt.Println()
+		fmt.Println("   Consider removing duplicates to avoid confusion.")
+		fmt.Println("   Run 'which bootapp' to see which one is currently active.")
+		fmt.Println()
+	}
 }

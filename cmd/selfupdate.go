@@ -37,12 +37,6 @@ func init() {
 func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Println("🔍 Checking for updates...")
 
-	// Get latest version from GitHub
-	latestVersion, err := getLatestVersion()
-	if err != nil {
-		return fmt.Errorf("failed to check latest version: %w", err)
-	}
-
 	// Get current executable path
 	exePath, err := os.Executable()
 	if err != nil {
@@ -55,8 +49,41 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve symlinks: %w", err)
 	}
 
-	fmt.Printf("Latest version: %s\n", latestVersion)
-	fmt.Printf("Current path:   %s\n\n", exePath)
+	// Check if installed via Homebrew
+	if isHomebrewInstall(exePath) {
+		fmt.Println("✓ Detected Homebrew installation")
+		fmt.Println("Running: brew upgrade bootapp")
+
+		brewCmd := exec.Command("brew", "upgrade", "bootapp")
+		brewCmd.Stdin = os.Stdin
+		brewCmd.Stdout = os.Stdout
+		brewCmd.Stderr = os.Stderr
+
+		if err := brewCmd.Run(); err != nil {
+			return fmt.Errorf("brew upgrade failed: %w", err)
+		}
+
+		return nil
+	}
+
+	// Direct binary installation - proceed with GitHub download
+	fmt.Println("✓ Direct binary installation detected")
+
+	// Get latest version from GitHub
+	latestVersion, err := getLatestVersion()
+	if err != nil {
+		return fmt.Errorf("failed to check latest version: %w", err)
+	}
+
+	fmt.Printf("Current version: %s\n", Version)
+	fmt.Printf("Latest version:  %s\n", latestVersion)
+	fmt.Printf("Install path:    %s\n\n", exePath)
+
+	// Check if already up to date
+	if Version == latestVersion || "v"+Version == latestVersion {
+		fmt.Println("✅ You are already running the latest version!")
+		return nil
+	}
 
 	// Determine platform
 	goos := runtime.GOOS
@@ -171,4 +198,12 @@ func downloadFile(filepath string, url string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// isHomebrewInstall checks if the executable is installed via Homebrew
+func isHomebrewInstall(execPath string) bool {
+	// Check common Homebrew installation paths
+	return strings.Contains(execPath, "/Cellar/") ||
+		strings.Contains(execPath, "/opt/homebrew/") ||
+		strings.Contains(execPath, "homebrew")
 }
